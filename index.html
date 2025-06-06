@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andrew's World</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        :root {
+            --primary-glow: rgba(0, 255, 170, 0.7);
+            --primary-color: #0fa;
+        }
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .neon-text {
+            color: #fff;
+            text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff, 0 0 42px var(--primary-color), 0 0 82px var(--primary-color), 0 0 92px var(--primary-color), 0 0 102px var(--primary-color), 0 0 151px var(--primary-color);
+            animation: flicker 1.5s infinite alternate;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            cursor: pointer;
+        }
+        .card-hover-rotate:hover { transform: translateY(-15px) scale(1.05) rotate(-2deg); box-shadow: 0 0 40px var(--primary-glow); }
+        .card-hover-lift:hover { transform: translateY(-12px); box-shadow: 0 20px 30px rgba(0,0,0,0.4), 0 0 40px var(--primary-glow); }
+        .card-hover-3d:hover { transform: perspective(1000px) rotateY(10deg) rotateX(5deg) scale3d(1.05, 1.05, 1.05); box-shadow: 0 0 50px var(--primary-glow); }
+        
+        .glitch { position: relative; }
+        .glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #121212; overflow: hidden; }
+        .glitch::before { left: 3px; text-shadow: -2px 0 red; animation: glitch-anim-1 2.5s infinite linear alternate-reverse; }
+        .glitch::after { left: -3px; text-shadow: -2px 0 blue; animation: glitch-anim-2 2.5s infinite linear alternate-reverse; }
+        @keyframes flicker { 0%,18%,22%,25%,53%,57%,100% { text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px var(--primary-color), 0 0 80px var(--primary-color), 0 0 90px var(--primary-color), 0 0 100px var(--primary-color), 0 0 150px var(--primary-color); } 20%,24%,55% { text-shadow: none; } }
+        @keyframes glitch-anim-1 { 0% { clip-path: inset(15% 0 85% 0); } 20% { clip-path: inset(90% 0 5% 0); } 40% { clip-path: inset(45% 0 50% 0); } 60% { clip-path: inset(10% 0 88% 0); } 80% { clip-path: inset(70% 0 20% 0); } 100% { clip-path: inset(55% 0 40% 0); } }
+        @keyframes glitch-anim-2 { 0% { clip-path: inset(80% 0 10% 0); } 20% { clip-path: inset(5% 0 92% 0); } 40% { clip-path: inset(60% 0 35% 0); } 60% { clip-path: inset(20% 0 75% 0); } 80% { clip-path: inset(95% 0 2% 0); } 100% { clip-path: inset(70% 0 25% 0); } }
+
+        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.7s ease-in-out, padding 0.5s ease; padding: 0 1.5rem; border-top: 1px solid transparent; }
+        .card.active .details-content { max-height: 500px; padding: 1.5rem; border-top-color: #444; }
+        .details-content p { opacity: 0; transform: translateY(10px); animation: fadeInDetail 0.5s forwards 0.3s; }
+        @keyframes fadeInDetail { to { opacity: 1; transform: translateY(0); } }
+        
+        .plane-clone {
+            position: fixed;
+            z-index: 9999;
+            font-size: 4.5rem;
+            animation: plane-crash 3s forwards ease-in-out;
+            pointer-events: none;
+        }
+        @keyframes plane-crash {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+            30% { transform: translate(-15vw, -30vh) rotate(-30deg) scale(1.2); }
+            60% { transform: translate(10vw, -10vh) rotate(20deg) scale(1.1); }
+            100% { transform: translate(-30vw, 150vh) rotate(-90deg) scale(0.5); opacity: 0; }
+        }
+        .explosion-container {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 200px;
+            pointer-events: none; z-index: 1000;
+        }
+        .explosion-particle {
+            position: absolute; bottom: 0; border-radius: 50%;
+            background-color: orange; animation: explode 0.8s forwards;
+        }
+        @keyframes explode {
+            from { transform: translate(var(--x-from), 0) scale(1); opacity: 1; }
+            to { transform: translate(var(--x-to), var(--y-to)) scale(0); opacity: 0; }
+        }
+
+        #hacker-terminal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; font-family: 'Fira Code', monospace; color: #0f0; padding: 20px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; overflow: hidden; }
+        #hacker-terminal.visible { opacity: 1; pointer-events: all; }
+        #hacker-code { white-space: pre-wrap; word-break: break-all; }
+        #hacker-code::after { content: '█'; animation: blink 1s step-end infinite; }
+        .hacker-error { color: #f00; } .hacker-success { color: #0f0; } .hacker-warning { color: #ff0; }
+
+        #secret-terminal-input { background: #111; border: 1px solid var(--primary-color); color: var(--primary-color); font-family: 'Fira Code', monospace; }
+        #code-runner-textarea { font-family: 'Fira Code', monospace !important; background-color: #282c34 !important; color: #abb2bf !important; border: 1px solid #444 !important; color-scheme: dark; }
+        #code-runner-output { font-family: 'Fira Code', monospace; background-color: #1a1a1a; color: #0f0; border: 1px solid #333; min-height: 50px; }
+        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: -1; display: none; }
+        #notification { position: fixed; top: 20px; right: 20px; background-color: var(--primary-color); color: #121212; padding: 1rem; border-radius: 0.5rem; font-weight: bold; z-index: 9999; opacity: 0; transition: opacity 0.5s, transform 0.5s; transform: translateX(100%); }
+        #notification.show { opacity: 1; transform: translateX(0); }
+        .quest-button, .quiz-option, #run-code-btn { border: 1px solid var(--primary-color); box-shadow: 0 0 5px var(--primary-glow); }
+    </style>
+</head>
+<body class="bg-gray-900">
+
+    <div id="hacker-terminal"><pre id="hacker-code"></pre></div>
+    <canvas id="particle-canvas" class="fixed top-0 left-0 w-full h-full z-0"></canvas>
+    <canvas id="matrix-canvas" class="fixed top-0 left-0 w-full h-full z-0"></canvas>
+    <div id="notification"></div>
+    <div id="explosion-container"></div>
+
+    <div id="main-container" class="relative z-10 container mx-auto px-4 py-8 md:py-16 transition-transform duration-500">
+        <header class="text-center mb-16 md:mb-24">
+            <h1 id="main-title" class="text-4xl md:text-7xl font-black uppercase tracking-widest neon-text min-h-[84px] md:min-h-[168px]"></h1>
+            <p class="text-lg md:text-xl mt-4 text-gray-400">Welcome to my digital world!</p>
+        </header>
+
+        <main class="space-y-16 md:space-y-24">
+            <section>
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-cyan-300">My Inner Circle</h2>
+                <p class="text-center text-gray-400 mb-10">Click on a card to learn more about my family.</p>
+                <div id="family-accordion" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="card card-hover-rotate rounded-xl">
+                        <div class="p-6 text-center"><div class="text-6xl mb-4">👨‍💻</div><h3 class="text-2xl font-bold text-white">Andrew</h3></div>
+                        <div class="details-content"><p>That's me! For me, code is more than just text on a screen; it's a tool to build entire worlds and experiences from scratch. I'm passionate about game development because it combines logic and creativity. This whole website is one of my projects! I'm the <span id="architect-trigger" class="font-bold text-cyan-400 hover:underline">architect</span> of this digital space. <input type="text" id="secret-terminal-input" class="w-full mt-2 p-1 rounded hidden" placeholder="Enter command..."></p></div>
+                    </div>
+                     <div class="card card-hover-rotate rounded-xl">
+                        <div class="p-6 text-center"><div class="text-6xl mb-4">🎮</div><h3 class="text-2xl font-bold text-white">Roma</h3></div>
+                        <div class="details-content"><p>My younger brother and my main sparring partner. He's an energetic 8-year-old schoolkid who loves to challenge me to a playful fight. He's also the first official beta-tester for all my games, providing the most honest (and sometimes brutal) feedback.</p></div>
+                    </div>
+                    <div class="card card-hover-rotate rounded-xl">
+                        <div class="p-6 text-center"><div class="text-6xl mb-4">💼</div><h3 class="text-2xl font-bold text-white">Dad (Artem)</h3></div>
+                        <div class="details-content"><p>My father, Artem, is a high-level businessman. He works in the complex world of banking and also manages hotel businesses. Watching him navigate challenges and build strategies is my main inspiration for thinking big and aiming high in my own projects.</p></div>
+                    </div>
+                    <div class="card card-hover-rotate rounded-xl">
+                        <div class="p-6 text-center"><div class="text-6xl mb-4">❤️</div><h3 class="text-2xl font-bold text-white">Mom (Lera)</h3></div>
+                        <div class="details-content"><p>My mother, Lera, is a talented photographer with an amazing eye for detail. She can find beauty in the most ordinary things. She taught me to see the world from different angles, which helps a lot when I'm designing levels or characters for my games.</p></div>
+                    </div>
+                </div>
+            </section>
+
+             <section id="hobbies-section">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">My Hobbies</h2>
+                <div class="flex flex-col md:flex-row gap-8 items-stretch">
+                    <div class="md:w-1/2 card card-hover-lift !cursor-default p-6 rounded-xl flex flex-col"><h3 class="text-2xl font-bold mb-3 text-white">Coding & Game Dev</h3><p class="text-gray-400 mb-4">This is my main passion, my digital sandbox. I love the logic of programming and the freedom of game design. It's the ultimate puzzle where I get to create the pieces and the rules. Below you can try to run a piece of code yourself!</p><div id="code-runner" class="mt-4 flex-grow flex flex-col"><textarea id="code-runner-textarea" class="w-full h-24 p-2 rounded-md resize-none">console.log("Hello, world!");</textarea><button id="run-code-btn" class="mt-2 quest-button text-white font-bold py-2 px-4 rounded-md">Run Code</button><p class="text-sm text-gray-400 mt-4 mb-1">Output:</p><div id="code-runner-output" class="w-full p-2 rounded-md flex-grow"></div></div></div>
+                    <div class="md:w-1/2 card card-hover-lift !cursor-default p-6 rounded-xl flex flex-col"><h3 class="text-2xl font-bold mb-3 text-white">Friends</h3><p class="text-gray-400 flex-grow">Beyond the screen, I love spending time with my friends. We can conquer virtual worlds in co-op games, explore the real world on our bikes, or just hang out and talk about everything and nothing. They are the best part of any day.</p></div>
+                </div>
+            </section>
+
+             <section>
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-cyan-300">My Pets</h2>
+                <p class="text-center text-gray-400 mb-10">And these are my fluffy companions. Click to learn more.</p>
+                <div id="pets-accordion" class="flex flex-col md:flex-row gap-8 items-stretch">
+                    <div id="yunis-card" class="md:w-1/2 card card-hover-3d rounded-xl"><div class="p-6 text-center"><div class="text-6xl mb-4">🐈</div><h3 class="text-2xl font-bold text-white">Yunis</h3></div><div class="details-content"><p>My white Oriental cat. He is a fluffy giant who believes the world revolves around him, and we're just here to serve him. His main talents are sleeping in the most inconvenient places and demanding food with a look of majestic disappointment.</p></div></div>
+                    <div id="kuki-card" class="md:w-1/2 card card-hover-3d rounded-xl"><div class="p-6 text-center"><div class="text-6xl mb-4">🐈‍⬛</div><h3 class="text-2xl font-bold text-white">Kuki</h3></div><div class="details-content"><p>My gray Oriental cat. Kuki is the complete opposite of Yunis – a sleek, silent hunter. She's graceful, impossibly fast, and can turn any object—a bottle cap, a shadow, my foot—into her prey. She's the ninja of our apartment.</p></div></div>
+                </div>
+            </section>
+            
+             <section>
+                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">My Favorites</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                     <div class="card card-hover-lift !cursor-default p-6 rounded-xl col-span-1 md:col-span-2"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Food</h3><div class="flex justify-around items-center h-full"><div class="text-center p-4"><span class="text-5xl">🍣</span><p class="mt-2 text-lg">Sushi & Rolls</p></div><div class="text-center p-4"><span class="text-5xl">🍕</span><p class="mt-2 text-lg">Pizza</p></div></div></div>
+                    <div class="card card-hover-lift !cursor-default p-6 rounded-xl"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Colors</h3><div class="flex justify-center items-center h-full gap-4"><div class="w-16 h-16 bg-black border-2 border-gray-500 rounded-full"></div><div class="w-16 h-16 bg-white border-2 border-gray-500 rounded-full"></div></div><p class="text-center text-sm mt-4 text-gray-400">Black & White - a classic choice!</p></div>
+                </div>
+            </section>
+
+             <section>
+                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">Travel Plans</h2>
+                 <div class="card card-hover-rotate !cursor-default p-8 rounded-xl flex flex-col md:flex-row items-center gap-8">
+                     <div id="travel-plane-icon" class="text-7xl transition-transform duration-300 hover:scale-125 cursor-pointer">✈️</div>
+                     <div class="text-center md:text-left"><h3 class="text-2xl font-bold text-white">Next Stop: Sochi!</h3><p class="text-gray-400 mt-2">After the camp, I'm going on a trip. My next stop is the sunny city of Sochi. Can't wait to see the sea and mountains!</p></div>
+                 </div>
+            </section>
+
+            <footer class="text-center pt-8">
+                 <p class="text-xl text-gray-400">Thanks for visiting my world!</p>
+            </footer>
+        </main>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("%cHey, curious developer! You found a secret. Try the Konami Code, or click on the word 'architect' in my bio and type 'cat_mode'. ;) - Andrew", "color: #0fa; font-size: 16px; font-weight: bold;");
+        
+        let toneReady = false;
+        const sounds = {};
+
+        function initializeSounds() {
+            if (typeof Tone === 'undefined' || toneReady) return;
+            try {
+                sounds.synth = new Tone.Synth().toDestination();
+                sounds.noise = new Tone.NoiseSynth({noise:{type:'white'}, envelope:{attack:0.005, decay:0.1, sustain:0}}).toDestination();
+                sounds.membrane = new Tone.MembraneSynth().toDestination();
+                toneReady = true;
+                console.log("Tone.js initialized.");
+            } catch (e) {
+                console.error("Failed to initialize Tone.js:", e);
+            }
+        }
+        
+        document.body.addEventListener('click', async () => {
+            if (!toneReady) initializeSounds();
+            if (toneReady && Tone.context.state !== 'running') {
+                try {
+                    await Tone.start();
+                    console.log("AudioContext started by user interaction.");
+                } catch (e) {
+                    console.error("Tone.start() failed:", e);
+                }
+            }
+        }, { once: true });
+
+        const soundCooldowns = {};
+        function playSound(sound, note, duration, cooldown = 100) {
+            if (!toneReady || !sounds[sound] || Tone.context.state !== 'running') return;
+            const now = performance.now();
+            const lastPlayed = soundCooldowns[sound] || 0;
+            if (now - lastPlayed < cooldown) return;
+            soundCooldowns[sound] = now;
+            try {
+                sounds[sound].triggerAttackRelease(note, duration);
+            } catch (e) {
+                console.error("Sound error:", e);
+            }
+        }
+        
+        const notificationEl = document.getElementById('notification');
+        function showNotification(message, playSnd = true) {
+            if(!notificationEl) return;
+            if (playSnd) playSound('synth', 'G5', '16n');
+            notificationEl.textContent = message;
+            notificationEl.classList.add('show');
+            setTimeout(() => notificationEl.classList.remove('show'), 3000);
+        }
+
+        const pCanvas = document.getElementById('particle-canvas');
+        if (pCanvas) {
+            const pCtx = pCanvas.getContext('2d');
+            let particlesArray;
+            const setupCanvas = () => {
+                pCanvas.width = window.innerWidth; 
+                pCanvas.height = document.body.scrollHeight;
+                let num = (window.innerWidth * document.body.scrollHeight) / 9000;
+                particlesArray = [];
+                for (let i = 0; i < num; i++) {
+                    let s = (Math.random() * 2) + 1; let x = Math.random() * (innerWidth-s*2)+s*2; let y = Math.random()*(document.body.scrollHeight-s*2)+s*2;
+                    let dX = (Math.random() * 0.4)-0.2; let dY = (Math.random()*0.4)-0.2;
+                    particlesArray.push({x,y,dX,dY,s,c:'rgba(0, 255, 170, 0.3)'});
+                }
+            };
+            const animateParticles = () => {
+                if (!particlesArray) return;
+                requestAnimationFrame(animateParticles); pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+                particlesArray.forEach(p => {
+                    if (p.x>pCanvas.width || p.x<0) p.dX=-p.dX; if (p.y>pCanvas.height || p.y<0) p.dY=-p.dY;
+                    p.x+=p.dX; p.y+=p.dY;
+                    pCtx.beginPath(); pCtx.arc(p.x, p.y, p.s, 0, Math.PI*2, false); pCtx.fillStyle=p.c; pCtx.fill();
+                });
+            };
+            setupCanvas(); animateParticles();
+            let resizeTimer;
+            window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupCanvas, 250); });
+        }
+
+        const allElements = {
+            mainTitle: document.getElementById('main-title'),
+            hackerTerm: document.getElementById('hacker-terminal'),
+            hackerCodeEl: document.getElementById('hacker-code'),
+            hobbiesSect: document.getElementById('hobbies-section'),
+            runCodeBtn: document.getElementById('run-code-btn'),
+            architectTrigger: document.getElementById('architect-trigger'),
+            secretInput: document.getElementById('secret-terminal-input'),
+            planeIcon: document.getElementById('travel-plane-icon'),
+            yunisCard: document.getElementById('yunis-card'),
+            kukiCard: document.getElementById('kuki-card'),
+            matrixCanvas: document.getElementById('matrix-canvas')
+        };
+        
+        const textsToCycle = ["Hello, I'm Andrew!", "Welcome to my world.", "SYSTEM COMPROMISED"];
+        let txtIdx = 0, charIdx = 0, isDel = false;
+        function typeDeleteLoop() {
+            if (!allElements.mainTitle) return;
+            const currentText = textsToCycle[txtIdx];
+            allElements.mainTitle.setAttribute('data-text', currentText);
+            if (Math.random() < 0.05) { allElements.mainTitle.classList.add('glitch'); setTimeout(() => allElements.mainTitle.classList.remove('glitch'), 200); }
+            if (isDel) { allElements.mainTitle.textContent = currentText.substring(0, charIdx--); } 
+            else { allElements.mainTitle.textContent = currentText.substring(0, charIdx++); }
+            if (!isDel && charIdx > currentText.length) { isDel = true; setTimeout(typeDeleteLoop, 2000); } 
+            else if (isDel && charIdx < 0) { isDel = false; txtIdx = (txtIdx + 1) % textsToCycle.length; setTimeout(typeDeleteLoop, 500); }
+            else { setTimeout(typeDeleteLoop, isDel ? 60: 120); }
+        }
+        typeDeleteLoop();
+        
+        function setupAccordion(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.querySelectorAll('.card').forEach((card, index) => {
+                card.addEventListener('click', (e) => {
+                    if(e.target.closest("#architect-trigger") || e.target.closest("#secret-terminal-input")) return;
+                    const isActive = card.classList.contains('active');
+                    playSound('synth', isActive ? 'C3' : 'A3', '16n', `accordion-${index}`);
+                    container.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+                    if (!isActive) card.classList.add('active');
+                });
+            });
+        }
+        setupAccordion('family-accordion');
+        setupAccordion('pets-accordion');
+
+        const hackerScript = [
+            { a: 't', t: '> Initializing neuro-link...\n', d: 40 }, { a: 't', t: '> Connecting to central server... ', d: 50 }, { a: 'p', dur: 500 }, { a: 't', t: '<span class="hacker-error">ACCESS DENIED.</span>\n', d: 80 },
+            { a: 'p', dur: 300 }, { a: 't', t: '> Rerouting through quantum proxy... <span class="hacker-warning">Firewall detected.</span>\n', d: 30 },
+            { a: 't', t: '> Deploying Ice-Breaker v3.4... [', d: 40 }, { a: 't', t: '▓', d: 150 }, { a: 't', t: '▓', d: 200 }, { a: 't', t: '▓', d: 120 }, { a: 't', t: '▓', d: 250 }, { a: 't', t: '▓', d: 180 }, { a: 't', t: '] ', d: 100 },
+            { a: 'p', dur: 300 }, { a: 't', t: '<span class="hacker-success">SUCCESS.</span>\n\n', d: 50 },
+            { a: 't', t: '>>> <span class="hacker-warning">SYSTEM COMPROMISED</span> <<<\n> Loading user data: ANDREW_K.profile\n> Decrypting passions.dat...\n\n', d: 20 },
+            { a: 't', t: '#include <iostream>\n\nint main() {\n    std::cout << "PASSION: UNLEASHED" << std::endl;\n    return 0;\n}\n\n', d: 25 },
+            { a: 't', t: '> Data loaded.\n> <span class="hacker-error">!! INTRUSION DETECTED !!</span>\n> Shutting down terminal to erase tracks...', d: 50 },
+        ];
+        async function runHackerScript() {
+            allElements.hackerCodeEl.innerHTML = '';
+            for (const cmd of hackerScript) {
+                if (cmd.a === 't') for (const char of cmd.t) { allElements.hackerCodeEl.innerHTML += char; await new Promise(r => setTimeout(r, cmd.d)); }
+                else if (cmd.a === 'p') await new Promise(r => setTimeout(r, cmd.dur));
+            }
+            setTimeout(() => { allElements.hackerTerm.classList.remove('visible'); document.body.style.overflow = 'auto'; }, 2000);
+        }
+        const hackerObserver = new IntersectionObserver((entries, observer) => {
+            if (entries[0].isIntersecting) {
+                allElements.hackerTerm.classList.add('visible');
+                document.body.style.overflow = 'hidden';
+                runHackerScript();
+                observer.disconnect();
+            }
+        }, { threshold: 0.6 });
+        if(allElements.hobbiesSect) hackerObserver.observe(allElements.hobbiesSect);
+
+        allElements.runCodeBtn?.addEventListener('click', () => {
+            playSound('synth', 'E5', '16n');
+            const codeTextarea = document.getElementById('code-runner-textarea');
+            const codeOutput = document.getElementById('code-runner-output');
+            codeOutput.innerHTML = '';
+            const oldLog = console.log;
+            console.log = (...args) => { const msg = args.map(a => typeof a ==='object' ? JSON.stringify(a,null,2) : a).join(' '); codeOutput.innerHTML += `<div>> ${msg}</div>`; oldLog.apply(console,args); };
+            try { new Function(codeTextarea.value)(); } catch (e) { codeOutput.innerHTML += `<div class="text-red-500">> Error: ${e.message}</div>`; }
+            console.log = oldLog;
+        });
+
+        // --- EASTER EGGS ---
+        allElements.planeIcon?.addEventListener('click', (e) => {
+            if (document.querySelector('.plane-clone')) return;
+            playSound('noise', 'C4', '0.5', 3000);
+            const plane = e.target;
+            const rect = plane.getBoundingClientRect();
+            const clone = document.createElement('div');
+            clone.innerText = '✈️';
+            clone.className = 'plane-clone';
+            clone.style.position = 'fixed';
+            clone.style.left = `${rect.left}px`;
+            clone.style.top = `${rect.top}px`;
+            document.body.appendChild(clone);
+            
+            clone.addEventListener('animationend', () => {
+                const explosionContainer = document.getElementById('explosion-container');
+                if (explosionContainer) {
+                    playSound('membrane', 'C1', '1n');
+                    const explosionX = window.innerWidth * (Math.random() * 0.4 + 0.3); // Crash near center
+                    for(let i = 0; i < 30; i++) {
+                        const particle = document.createElement('div');
+                        particle.className = 'explosion-particle';
+                        particle.style.setProperty('--x-from', `${explosionX + (Math.random() - 0.5) * 50}px`);
+                        const angle = Math.random() * Math.PI - Math.PI;
+                        const velocity = Math.random() * 200 + 100;
+                        particle.style.setProperty('--x-to', `${explosionX + Math.cos(angle) * velocity}px`);
+                        particle.style.setProperty('--y-to', `${-Math.abs(Math.sin(angle) * velocity)}px`);
+                        particle.style.backgroundColor = `hsl(${Math.random() * 60}, 100%, 50%)`;
+                        const size = Math.random() * 10 + 5;
+                        particle.style.width = `${size}px`;
+                        particle.style.height = `${size}px`;
+                        explosionContainer.appendChild(particle);
+                        setTimeout(() => particle.remove(), 800);
+                    }
+                }
+                clone.remove();
+            }, { once: true });
+        });
+        
+        allElements.architectTrigger?.addEventListener('click', () => {
+            playSound('synth', 'F#5', '16n');
+            allElements.secretInput.classList.toggle('hidden');
+            allElements.secretInput.focus();
+        });
+        let isCatMode = false;
+        allElements.secretInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (e.target.value.toLowerCase() === 'cat_mode') {
+                    isCatMode = !isCatMode;
+                    document.body.style.fontFamily = isCatMode ? 'Comic Sans MS' : '';
+                    showNotification(isCatMode ? 'Cat mode ON! Meow!' : 'Cat mode OFF.', false);
+                    playSound('synth', isCatMode ? 'A5' : 'A3', '8n');
+                }
+                e.target.value = '';
+                e.target.classList.add('hidden');
+            }
+        });
+
+        allElements.yunisCard?.addEventListener('click', () => { showNotification("Yunis thinks: 'Is it dinner time yet?'", false); playSound('synth', "C4", "8n", 500); });
+        allElements.kukiCard?.addEventListener('click', () => { showNotification("Kuki thinks: 'I see a fly...'", false); playSound('synth', "G4", "8n", 500); });
+
+        let matrixInterval, isMatrixMode = false;
+        function startMatrix() {
+            if (!allElements.matrixCanvas) return;
+            isMatrixMode = true;
+            allElements.matrixCanvas.style.display = 'block';
+            const mCtx = allElements.matrixCanvas.getContext('2d');
+            allElements.matrixCanvas.width = window.innerWidth;
+            allElements.matrixCanvas.height = window.innerHeight;
+            const alphabet = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボпоヴッн';
+            const fontSize = 16, columns = allElements.matrixCanvas.width / fontSize;
+            const rainDrops = Array(Math.floor(columns)).fill(1);
+            function drawMatrix() {
+                mCtx.fillStyle = 'rgba(18, 18, 18, 0.05)';
+                mCtx.fillRect(0, 0, allElements.matrixCanvas.width, allElements.matrixCanvas.height);
+                mCtx.fillStyle = '#0F0'; mCtx.font = fontSize + 'px monospace';
+                for (let i = 0; i < rainDrops.length; i++) {
+                    const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                    mCtx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                    if (rainDrops[i] * fontSize > allElements.matrixCanvas.height && Math.random() > 0.975) rainDrops[i] = 0;
+                    rainDrops[i]++;
+                }
+            }
+            matrixInterval = setInterval(drawMatrix, 33);
+        }
+        function stopMatrix() { isMatrixMode = false; if(allElements.matrixCanvas) allElements.matrixCanvas.style.display = 'none'; clearInterval(matrixInterval); }
+
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+        window.addEventListener('keydown', e => {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    if(isMatrixMode) { stopMatrix(); showNotification('Matrix Deactivated.', false); playSound('synth', 'C3', '2n'); } 
+                    else { startMatrix(); showNotification('Matrix Activated.', false); playSound('synth', 'C5', '2n'); }
+                    konamiIndex = 0;
+                }
+            } else { konamiIndex = 0; }
+        });
+    });
+</script>
+</body>
+</html>
