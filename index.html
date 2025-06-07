@@ -26,6 +26,29 @@
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
             transition: background-color 0.5s ease, color 0.5s ease;
+            cursor: none; /* Hide default cursor */
+        }
+        
+        body:hover #cursor-follower {
+            opacity: 1;
+        }
+
+        /* --- New Cursor Follower --- */
+        #cursor-follower {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 10000;
+            opacity: 0;
+            transform: translate(-50%, -50%);
+            transition: transform 0.15s ease-out, opacity 0.3s ease, background-color 0.5s ease, width 0.3s ease, height 0.3s ease;
+            box-shadow: 0 0 25px var(--primary-glow);
+            filter: blur(5px);
         }
 
         /* --- Enhanced Animations --- */
@@ -39,8 +62,8 @@
             background-color: var(--card-bg-color);
             border: 1px solid var(--border-color);
             transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            cursor: pointer;
         }
+        /* No cursor pointer since we have a custom one */
         .card-hover-rotate:hover { transform: translateY(-15px) scale(1.05) rotate(-2deg); box-shadow: 0 0 40px var(--primary-glow); }
         .card-hover-lift:hover { transform: translateY(-12px); box-shadow: 0 20px 30px rgba(0,0,0,0.4), 0 0 40px var(--primary-glow); }
         .card-hover-3d:hover { transform: perspective(1000px) rotateY(10deg) rotateX(5deg) scale3d(1.05, 1.05, 1.05); box-shadow: 0 0 50px var(--primary-glow); }
@@ -102,34 +125,33 @@
         #notification { position: fixed; top: 20px; right: 20px; background-color: var(--primary-color); color: var(--bg-color); padding: 1rem; border-radius: 0.5rem; font-weight: bold; z-index: 9999; opacity: 0; transition: opacity 0.5s, transform 0.5s, background-color 0.5s ease; transform: translateX(100%); }
         #notification.show { opacity: 1; transform: translateX(0); }
         .quest-button, .quiz-option, #run-code-btn { border: 1px solid var(--primary-color); box-shadow: 0 0 5px var(--primary-glow); }
-        .color-orb { cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .color-orb { transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .color-orb:hover { transform: scale(1.2); box-shadow: 0 0 15px 5px var(--primary-glow); }
         
         #credits-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9998; color: #fff; pointer-events: none; opacity: 0; transition: opacity 0.5s; display: flex; justify-content: center; align-items: flex-end; overflow: hidden; }
         #credits-overlay.show { opacity: 1; pointer-events: auto; }
-        #credits-content { position: relative; font-family: 'Inter', sans-serif; text-align: center; animation: scroll-credits 45s linear forwards; }
-        @keyframes scroll-credits { from { transform: translateY(100vh); } to { transform: translateY(-100%); } }
+        #credits-content { position: relative; font-family: 'Inter', sans-serif; text-align: center; animation: scroll-credits 55s linear forwards; }
+        @keyframes scroll-credits { from { transform: translateY(100vh); } to { transform: translateY(-100vh); } }
         
         .sushi-rain { position: fixed; top: -50px; font-size: 2rem; z-index: 1001; pointer-events: none; animation: fall 3s linear forwards; }
         @keyframes fall { to { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
 
-        /* --- New Melting Effect Style --- */
+        /* --- Melting Effect Style --- */
         #main-container.is-melting {
             filter: url(#melt-filter);
-            transition: opacity 3s ease-in 7s; /* Start fading out after 7s of melting */
+            transition: opacity 3s ease-in 7s; 
             will-change: filter, opacity;
         }
         #main-container.is-faded {
             opacity: 0 !important;
         }
 
-        /* --- New Morse Code Style --- */
+        /* --- Morse Code Style --- */
         #morse-dot {
             display: inline-block;
             transition: opacity 0.1s linear;
             opacity: 1;
             font-weight: bold;
-            cursor: help;
         }
         #morse-dot.off {
             opacity: 0;
@@ -142,9 +164,45 @@
         #page-footer:hover #morse-tooltip {
             opacity: 1;
         }
+
+        /* --- Secret Game Style --- */
+        #game-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9990;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        #game-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #game-canvas {
+            background-color: #000;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+        #game-info {
+            color: var(--primary-color);
+            font-family: 'Fira Code', monospace;
+            margin-top: 20px;
+            font-size: 1.2rem;
+        }
+
     </style>
 </head>
 <body class="bg-gray-900">
+    
+    <div id="cursor-follower"></div>
 
     <!-- SVG filter for the melting effect -->
     <svg style="position:absolute; width:0; height:0; z-index: -1;">
@@ -164,6 +222,13 @@
     <div id="notification"></div>
     <div id="explosion-container"></div>
     <div id="credits-overlay"><div id="credits-content"></div></div>
+    
+    <!-- New Game Overlay -->
+    <div id="game-overlay">
+        <canvas id="game-canvas" width="400" height="400"></canvas>
+        <div id="game-info">Score: <span id="game-score">0</span>. Press ESC to exit.</div>
+    </div>
+
 
     <div id="main-container" class="relative z-10 container mx-auto px-4 py-8 md:py-16 transition-all duration-500">
         <header class="text-center mb-16 md:mb-24">
@@ -215,7 +280,7 @@
             <section>
                  <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">My Favorites</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                     <div class="card card-hover-lift !cursor-default p-6 rounded-xl col-span-1 md:col-span-2"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Food</h3><div class="flex justify-around items-center h-full"><div id="sushi-icon" class="text-center p-4 cursor-pointer transition-transform duration-200 hover:scale-125"><span class="text-5xl">🍣</span><p class="mt-2 text-lg">Sushi & Rolls</p></div><div class="text-center p-4"><span class="text-5xl">🍕</span><p class="mt-2 text-lg">Pizza</p></div></div></div>
+                     <div class="card card-hover-lift !cursor-default p-6 rounded-xl col-span-1 md:col-span-2"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Food</h3><div class="flex justify-around items-center h-full"><div id="sushi-icon" class="text-center p-4 transition-transform duration-200 hover:scale-125"><span class="text-5xl">🍣</span><p class="mt-2 text-lg">Sushi & Rolls</p></div><div class="text-center p-4"><span class="text-5xl">🍕</span><p class="mt-2 text-lg">Pizza</p></div></div></div>
                     <div class="card card-hover-lift !cursor-default p-6 rounded-xl"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Colors</h3><div class="flex justify-center items-center h-full gap-4"><div id="color-orb-black" class="w-16 h-16 bg-black border-2 border-gray-500 rounded-full color-orb"></div><div id="color-orb-white" class="w-16 h-16 bg-white border-2 border-gray-500 rounded-full color-orb"></div></div><p class="text-center text-sm mt-4 text-gray-400">Black & White - a classic choice!</p></div>
                 </div>
             </section>
@@ -223,12 +288,12 @@
             <section>
                  <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">Travel Plans</h2>
                  <div class="card card-hover-rotate !cursor-default p-8 rounded-xl flex flex-col md:flex-row items-center gap-8">
-                     <div id="travel-plane-icon" class="text-7xl transition-transform duration-300 hover:scale-125 cursor-pointer">✈️</div>
+                     <div id="travel-plane-icon" class="text-7xl transition-transform duration-300 hover:scale-125">✈️</div>
                      <div class="text-center md:text-left"><h3 class="text-2xl font-bold text-white">Next Stop: Sochi!</h3><p class="text-gray-400 mt-2">After the camp, I'm going on a trip. My next stop is the sunny city of Sochi. Can't wait to see the sea and mountains!</p></div>
                  </div>
             </section>
 
-            <footer id="page-footer" class="text-center pt-8 cursor-pointer relative">
+            <footer id="page-footer" class="text-center pt-8 relative">
                 <p class="text-xl text-gray-400">Thanks for visiting my world<span id="morse-dot">.</span></p>
                 <div id="morse-tooltip" class="absolute left-1/2 -translate-x-1/2 -top-4 bg-gray-800 text-white p-2 rounded-md text-lg">H.E.L.P.</div>
             </footer>
@@ -261,11 +326,14 @@ document.addEventListener('DOMContentLoaded', () => {
         pageFooter: document.getElementById('page-footer'),
         creditsOverlay: document.getElementById('credits-overlay'),
         creditsContent: document.getElementById('credits-content'),
-        // New elements for added features
         mainContainer: document.getElementById('main-container'),
         meltDisplacement: document.getElementById('melt-displacement'),
         morseDot: document.getElementById('morse-dot'),
         morseTooltip: document.getElementById('morse-tooltip'),
+        cursorFollower: document.getElementById('cursor-follower'),
+        gameOverlay: document.getElementById('game-overlay'),
+        gameCanvas: document.getElementById('game-canvas'),
+        gameScoreEl: document.getElementById('game-score'),
     };
     
     // --- Sound Engine ---
@@ -282,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sounds.pluck = new Tone.PluckSynth().toDestination();
             sounds.metal = new Tone.MetalSynth({frequency: 150, envelope: {attack: 0.001, decay: 0.4, release: 0.2}, harmonicity: 8.5, modulationIndex: 20, resonance: 4000, octaves: 1.5}).toDestination();
             sounds.morse = new Tone.Synth({oscillator: {type: 'sine'}, envelope: {attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1}}).toDestination();
+            sounds.game = new Tone.MembraneSynth({pitchDecay: 0.01, octaves: 6, oscillator: {type: "sine"}, envelope: {attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2}}).toDestination();
             toneReady = true;
         } catch (e) {
             console.error("Failed to initialize Tone.js:", e);
@@ -324,6 +393,13 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    // --- New Cursor Follower Logic ---
+    if(allElements.cursorFollower) {
+        window.addEventListener('mousemove', e => {
+            allElements.cursorFollower.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+        });
+    }
+
     // --- Interactive Particles ---
     const pCanvas = allElements.particleCanvas;
     if (pCanvas) {
@@ -332,8 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const mouse = { x: null, y: null, radius: 100 };
 
         window.addEventListener('mousemove', e => {
-            mouse.x = e.x;
-            mouse.y = e.y + window.scrollY;
+            mouse.x = e.clientX;
+            mouse.y = e.clientY + window.scrollY;
         });
         window.addEventListener('mouseout', () => {
             mouse.x = null;
@@ -521,13 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { once: true });
     });
 
-    // Easter Egg 2: Secret Terminal
-    allElements.architectTrigger?.addEventListener('click', () => {
-        playSound('pluck', 'F#5', '16n');
-        allElements.secretInput.classList.toggle('hidden');
-        allElements.secretInput.focus();
-    });
-
+    // Easter Egg 2: Secret Terminal & Game
     const terminalCommands = {
         'cat_mode': () => {
             const isCatMode = document.body.style.fontFamily === 'Comic Sans MS';
@@ -536,10 +606,20 @@ document.addEventListener('DOMContentLoaded', () => {
             playSound('synth', isCatMode ? 'A3' : 'A5', '8n');
         },
         'help': () => {
-            showNotification('Commands: cat_mode, theme [default|synthwave], credits', false);
+            showNotification('Commands: cat_mode, theme [default|synthwave], credits, run game.exe', false);
         },
         'credits': () => {
             showCredits();
+        },
+        'run': (arg) => {
+            if (arg === 'game.exe') {
+                snakeGame.start();
+                showNotification('SNAKE.EXE running... Use Arrow Keys to move.', false);
+                playSound('synth', 'C5', '8n');
+            } else {
+                showNotification('Unknown executable.', false);
+                playSound('noise', 'C2', '8n');
+            }
         },
         'theme': (arg) => {
             if (arg === 'synthwave') {
@@ -567,6 +647,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    allElements.architectTrigger?.addEventListener('click', () => {
+        playSound('pluck', 'F#5', '16n');
+        allElements.secretInput.classList.toggle('hidden');
+        allElements.secretInput.focus();
+    });
+
     allElements.secretInput?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             const input = e.target.value.toLowerCase().trim();
@@ -589,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Easter Egg 4: Konami Code (Matrix)
     let matrixInterval, isMatrixMode = false;
     function startMatrix() {
-        if (!allElements.matrixCanvas) return;
+        if (!allElements.matrixCanvas || isMatrixMode) return;
         isMatrixMode = true;
         allElements.matrixCanvas.style.display = 'block';
         const mCtx = allElements.matrixCanvas.getContext('2d');
@@ -614,17 +700,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopMatrix() { isMatrixMode = false; if(allElements.matrixCanvas) allElements.matrixCanvas.style.display = 'none'; clearInterval(matrixInterval); }
     const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     let konamiIndex = 0;
-    window.addEventListener('keydown', e => {
-        if (e.target === allElements.secretInput || e.target.tagName === 'TEXTAREA') return;
-        if (e.key === konamiCode[konamiIndex]) {
-            konamiIndex++;
-            if (konamiIndex === konamiCode.length) {
-                if(isMatrixMode) { stopMatrix(); showNotification('Matrix Deactivated.', false); playSound('synth', 'C3', '2n'); } 
-                else { startMatrix(); showNotification('Matrix Activated.', false); playSound('synth', 'C5', '2n'); }
-                konamiIndex = 0;
-            }
-        } else { konamiIndex = 0; }
-    });
     
     // Easter Egg 5: Sushi Rain
     allElements.sushiIcon?.addEventListener('click', () => {
@@ -633,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const sushi = document.createElement('div');
                 sushi.className = 'sushi-rain';
-                sushi.textContent = '�';
+                sushi.textContent = '🍣';
                 sushi.style.left = `${Math.random() * 100}vw`;
                 sushi.style.animationDuration = `${Math.random() * 2 + 2}s`;
                 document.body.appendChild(sushi);
@@ -656,27 +731,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let footerTimeout;
     function showCredits() {
         allElements.creditsContent.innerHTML = `
-            <div class="p-4" style="padding-bottom: 50vh;">
-                <h2 class="text-6xl font-black mb-12 uppercase tracking-widest neon-text" style="--primary-color: #fff; --primary-glow: rgba(255,255,255,0.5);">A Project By Andrew</h2>
-                <div class="space-y-12 text-2xl text-gray-300 max-w-4xl mx-auto">
-                    <p>For three intense days and nights, a world was forged from logic and imagination.</p>
-                    <p>Battling complex algorithms, elusive bugs, and the ever-present threat of a system crash, this digital experience was brought to life.</p>
-                    <p class="font-bold text-white text-3xl my-8">I, Andrew, am the architect of this reality.</p>
-                    <p>Every line of code represented a challenge to overcome. Every animation was a small victory. This was not just a school project; it was a testament to passion and the endless pursuit of creation.</p>
-                    <p>This entire website, from the interactive particles to the hidden secrets, was built from scratch.</p>
-                    
+            <div class="p-4" style="height: 200vh; display: flex; flex-direction: column; justify-content: space-around;">
+                <div class="space-y-12">
+                    <h2 class="text-6xl font-black uppercase tracking-widest neon-text" style="--primary-color: #fff; --primary-glow: rgba(255,255,255,0.5);">A Project By Andrew</h2>
+                    <div class="space-y-12 text-2xl text-gray-300 max-w-4xl mx-auto">
+                        <p>Это не просто сайт. Это результат бессонных ночей, тысяч строк кода и несгибаемого упорства.</p>
+                        <p>Я, Андрей, создал этот цифровой мир с нуля. Каждая анимация, каждый эффект, каждая строчка кода — это часть моей истории, моей битвы с багами и сложными алгоритмами.</p>
+                        <p class="font-bold text-white text-3xl my-8">Это было тяжело. Это было долго. Но это было круто.</p>
+                        <p>Я хотел создать не просто страницу, а целое приключение, полное секретов и сюрпризов. Надеюсь, вы это почувствовали.</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-12">
                     <div class="py-12">
-                        <p class="text-3xl font-bold mb-4 text-cyan-300">Chief Beta Tester & Sparring Partner</p>
-                        <p class="text-4xl font-bold">Roma</p>
+                        <p class="text-3xl font-bold mb-4 text-cyan-300">Главный Бета-Тестер</p>
+                        <p class="text-4xl font-bold">Рома</p>
                     </div>
 
                     <div class="py-12">
-                         <p class="text-3xl font-bold mb-4 text-cyan-300">Moral Support & Inspiration</p>
-                         <p class="text-4xl font-bold mb-2">Mom (Lera)</p>
-                         <p class="text-4xl font-bold">Dad (Artem)</p>
+                         <p class="text-3xl font-bold mb-4 text-cyan-300">Вдохновение и Поддержка</p>
+                         <p class="text-4xl font-bold mb-2">Мама (Лера)</p>
+                         <p class="text-4xl font-bold">Папа (Артем)</p>
                     </div>
-                     <p class="text-3xl mt-16">And to you, for exploring my world.</p>
-                     <p class="text-4xl font-bold mt-4">Thank you.</p>
+                     <p class="text-3xl mt-16">И спасибо вам, что заглянули в мой мир.</p>
                 </div>
             </div>
         `;
@@ -691,19 +768,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const endCredits = () => {
             allElements.creditsOverlay.classList.remove('show');
             allElements.creditsOverlay.removeEventListener('click', endCredits);
+            allElements.creditsContent.removeEventListener('animationend', animationEndHandler);
         };
         
         const animationEndHandler = () => {
             endCredits();
-            allElements.creditsContent.removeEventListener('animationend', animationEndHandler);
         };
 
-        allElements.creditsContent.addEventListener('animationend', animationEndHandler);
-        allElements.creditsOverlay.addEventListener('click', endCredits);
+        allElements.creditsContent.addEventListener('animationend', animationEndHandler, {once: true});
+        allElements.creditsOverlay.addEventListener('click', endCredits, {once: true});
     }
 
     allElements.pageFooter?.addEventListener('click', (e) => {
-        // Only count clicks on the footer itself, not the tooltip
         if (e.target.closest("#morse-dot") || e.target.closest("#morse-tooltip")) return;
 
         clearTimeout(footerTimeout);
@@ -723,18 +799,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Easter Egg 9: Morse Code
     const morseSequence = [
-        // H (....)
-        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 },
-        { type: 'gap', duration: 240 }, // letter gap
-        // E (.)
-        { type: 'dot', duration: 80 },
-        { type: 'gap', duration: 240 }, // letter gap
-        // L (.-..)
-        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 },
-        { type: 'gap', duration: 240 }, // letter gap
-        // P (.--.)
-        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 },
-        { type: 'gap', duration: 1000 } // word gap
+        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 240 },
+        { type: 'dot', duration: 80 }, { type: 'gap', duration: 240 },
+        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 240 },
+        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 1000 }
     ];
 
     let morseIndex = 0;
@@ -756,6 +824,141 @@ document.addEventListener('DOMContentLoaded', () => {
         morseIndex = (morseIndex + 1) % morseSequence.length;
         setTimeout(playMorseCode, currentSignal.duration);
     }
+    
+    // --- New Snake Game Logic ---
+    const snakeGame = {
+        ctx: allElements.gameCanvas.getContext('2d'),
+        tileSize: 20,
+        snake: [{x: 10, y: 10}],
+        food: {},
+        dx: 0,
+        dy: 0,
+        score: 0,
+        gameLoopInterval: null,
+        isGameOver: false,
+        
+        start() {
+            allElements.gameOverlay.classList.add('visible');
+            this.isGameOver = false;
+            this.snake = [{x: 10, y: 10}];
+            this.dx = 0;
+            this.dy = 0;
+            this.score = 0;
+            allElements.gameScoreEl.textContent = this.score;
+            this.placeFood();
+            
+            if (this.gameLoopInterval) clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = setInterval(() => this.update(), 100);
+            
+            window.addEventListener('keydown', this.handleInput);
+        },
+        
+        stop() {
+            allElements.gameOverlay.classList.remove('visible');
+            clearInterval(this.gameLoopInterval);
+            window.removeEventListener('keydown', this.handleInput);
+            playSound('synth', 'A3', '8n');
+        },
+        
+        placeFood() {
+            const gridSize = allElements.gameCanvas.width / this.tileSize;
+            this.food = {
+                x: Math.floor(Math.random() * gridSize),
+                y: Math.floor(Math.random() * gridSize)
+            };
+        },
+        
+        draw() {
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+            
+            // Clear canvas
+            this.ctx.fillStyle = '#111';
+            this.ctx.fillRect(0, 0, allElements.gameCanvas.width, allElements.gameCanvas.height);
+            
+            // Draw snake
+            this.ctx.fillStyle = primaryColor;
+            this.snake.forEach(part => {
+                this.ctx.fillRect(part.x * this.tileSize, part.y * this.tileSize, this.tileSize -1, this.tileSize -1);
+            });
+
+            // Draw food
+            this.ctx.fillStyle = '#F00';
+            this.ctx.fillRect(this.food.x * this.tileSize, this.food.y * this.tileSize, this.tileSize-1, this.tileSize-1);
+        },
+        
+        update() {
+            if (this.isGameOver) return;
+            
+            const head = {x: this.snake[0].x + this.dx, y: this.snake[0].y + this.dy};
+            this.snake.unshift(head);
+            
+            // Check for food collision
+            if (head.x === this.food.x && head.y === this.food.y) {
+                this.score++;
+                allElements.gameScoreEl.textContent = this.score;
+                this.placeFood();
+                playSound('game', 'C5', '32n', 50);
+            } else {
+                this.snake.pop();
+            }
+
+            // Check for game over
+            const gridSize = allElements.gameCanvas.width / this.tileSize;
+            if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize || this.checkSelfCollision()) {
+                this.gameOver();
+            }
+            
+            this.draw();
+        },
+
+        checkSelfCollision() {
+            for (let i = 1; i < this.snake.length; i++) {
+                if (this.snake[i].x === this.snake[0].x && this.snake[i].y === this.snake[0].y) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        
+        gameOver() {
+            this.isGameOver = true;
+            clearInterval(this.gameLoopInterval);
+            playSound('game', 'C2', '4n', 0);
+            setTimeout(() => this.stop(), 1500); // Wait before closing
+        },
+
+        handleInput: (e) => { // Use arrow function to preserve 'this' context
+            switch(e.key) {
+                case 'ArrowUp': if (snakeGame.dy === 0) { snakeGame.dx = 0; snakeGame.dy = -1; } break;
+                case 'ArrowDown': if (snakeGame.dy === 0) { snakeGame.dx = 0; snakeGame.dy = 1; } break;
+                case 'ArrowLeft': if (snakeGame.dx === 0) { snakeGame.dx = -1; snakeGame.dy = 0; } break;
+                case 'ArrowRight': if (snakeGame.dx === 0) { snakeGame.dx = 1; snakeGame.dy = 0; } break;
+                case 'Escape': snakeGame.stop(); break;
+            }
+        }
+    };
+
+    // Global keydown listener to delegate to different contexts
+    window.addEventListener('keydown', e => {
+        if(allElements.gameOverlay.classList.contains('visible')) {
+            // Game has its own listener, so we do nothing here to avoid conflicts.
+            return;
+        }
+
+        if (e.target === allElements.secretInput || e.target.tagName === 'TEXTAREA') return;
+        
+        // Konami code logic
+        if (e.key === konamiCode[konamiIndex]) {
+            konamiIndex++;
+            if (konamiIndex === konamiCode.length) {
+                if(isMatrixMode) { stopMatrix(); showNotification('Matrix Deactivated.', false); playSound('synth', 'C3', '2n'); } 
+                else { startMatrix(); showNotification('Matrix Activated.', false); playSound('synth', 'C5', '2n'); }
+                konamiIndex = 0;
+            }
+        } else {
+            konamiIndex = 0;
+        }
+    });
 
     // --- Start all dynamic processes ---
     resetInactivityTimer();
