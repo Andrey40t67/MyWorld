@@ -104,15 +104,59 @@
         .quest-button, .quiz-option, #run-code-btn { border: 1px solid var(--primary-color); box-shadow: 0 0 5px var(--primary-glow); }
         .color-orb { cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .color-orb:hover { transform: scale(1.2); box-shadow: 0 0 15px 5px var(--primary-glow); }
-        #credits-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9998; color: #fff; pointer-events: none; opacity: 0; transition: opacity 0.5s; display: flex; justify-content: center; align-items: flex-end; }
+        
+        #credits-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9998; color: #fff; pointer-events: none; opacity: 0; transition: opacity 0.5s; display: flex; justify-content: center; align-items: flex-end; overflow: hidden; }
         #credits-overlay.show { opacity: 1; pointer-events: auto; }
-        #credits-content { position: relative; font-family: 'Inter', sans-serif; text-align: center; animation: scroll-credits 20s linear forwards; }
+        #credits-content { position: relative; font-family: 'Inter', sans-serif; text-align: center; animation: scroll-credits 45s linear forwards; }
         @keyframes scroll-credits { from { transform: translateY(100vh); } to { transform: translateY(-100%); } }
+        
         .sushi-rain { position: fixed; top: -50px; font-size: 2rem; z-index: 1001; pointer-events: none; animation: fall 3s linear forwards; }
         @keyframes fall { to { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
+
+        /* --- New Melting Effect Style --- */
+        #main-container.is-melting {
+            filter: url(#melt-filter);
+            transition: opacity 3s ease-in 7s; /* Start fading out after 7s of melting */
+            will-change: filter, opacity;
+        }
+        #main-container.is-faded {
+            opacity: 0 !important;
+        }
+
+        /* --- New Morse Code Style --- */
+        #morse-dot {
+            display: inline-block;
+            transition: opacity 0.1s linear;
+            opacity: 1;
+            font-weight: bold;
+            cursor: help;
+        }
+        #morse-dot.off {
+            opacity: 0;
+        }
+        #morse-tooltip {
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #page-footer:hover #morse-tooltip {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-900">
+
+    <!-- SVG filter for the melting effect -->
+    <svg style="position:absolute; width:0; height:0; z-index: -1;">
+        <defs>
+            <filter id="melt-filter">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+                <feTurbulence type="fractalNoise" baseFrequency="0.02 0.03" numOctaves="1" result="turbulence"/>
+                <feDisplacementMap id="melt-displacement" in="goo" in2="turbulence" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+    </svg>
 
     <div id="hacker-terminal"><pre id="hacker-code"></pre></div>
     <canvas id="particle-canvas" class="fixed top-0 left-0 w-full h-full z-0"></canvas>
@@ -121,7 +165,7 @@
     <div id="explosion-container"></div>
     <div id="credits-overlay"><div id="credits-content"></div></div>
 
-    <div id="main-container" class="relative z-10 container mx-auto px-4 py-8 md:py-16 transition-transform duration-500">
+    <div id="main-container" class="relative z-10 container mx-auto px-4 py-8 md:py-16 transition-all duration-500">
         <header class="text-center mb-16 md:mb-24">
             <h1 id="main-title" class="text-4xl md:text-7xl font-black uppercase tracking-widest neon-text min-h-[84px] md:min-h-[168px]"></h1>
             <p class="text-lg md:text-xl mt-4 text-gray-400">Welcome to my digital world!</p>
@@ -184,8 +228,9 @@
                  </div>
             </section>
 
-            <footer id="page-footer" class="text-center pt-8 cursor-pointer">
-                 <p class="text-xl text-gray-400">Thanks for visiting my world!</p>
+            <footer id="page-footer" class="text-center pt-8 cursor-pointer relative">
+                <p class="text-xl text-gray-400">Thanks for visiting my world<span id="morse-dot">.</span></p>
+                <div id="morse-tooltip" class="absolute left-1/2 -translate-x-1/2 -top-4 bg-gray-800 text-white p-2 rounded-md text-lg">H.E.L.P.</div>
             </footer>
         </main>
     </div>
@@ -216,6 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
         pageFooter: document.getElementById('page-footer'),
         creditsOverlay: document.getElementById('credits-overlay'),
         creditsContent: document.getElementById('credits-content'),
+        // New elements for added features
+        mainContainer: document.getElementById('main-container'),
+        meltDisplacement: document.getElementById('melt-displacement'),
+        morseDot: document.getElementById('morse-dot'),
+        morseTooltip: document.getElementById('morse-tooltip'),
     };
     
     // --- Sound Engine ---
@@ -231,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sounds.membrane = new Tone.MembraneSynth().toDestination();
             sounds.pluck = new Tone.PluckSynth().toDestination();
             sounds.metal = new Tone.MetalSynth({frequency: 150, envelope: {attack: 0.001, decay: 0.4, release: 0.2}, harmonicity: 8.5, modulationIndex: 20, resonance: 4000, octaves: 1.5}).toDestination();
+            sounds.morse = new Tone.Synth({oscillator: {type: 'sine'}, envelope: {attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1}}).toDestination();
             toneReady = true;
         } catch (e) {
             console.error("Failed to initialize Tone.js:", e);
@@ -259,6 +310,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error("Sound error:", e);
         }
+    }
+
+    // --- Helper Functions ---
+    function isElementInViewport(el) {
+        if (!el) return false;
+        const rect = el.getBoundingClientRect();
+        return (
+            rect.bottom > 0 &&
+            rect.right > 0 &&
+            rect.top < (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.left < (window.innerWidth || document.documentElement.clientWidth)
+        );
     }
 
     // --- Interactive Particles ---
@@ -373,6 +436,51 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log = oldLog;
     });
 
+    // --- Inactivity Melting Effect ---
+    let inactivityTimer;
+    let meltAnimation;
+    let isMelting = false;
+    let meltAmount = 0;
+
+    const startMelting = () => {
+        if (isMelting) return;
+        isMelting = true;
+        console.log("Inactivity detected. Initiating melt sequence.");
+        playSound('noise', 'C1', '2', 2000);
+        allElements.mainContainer.classList.add('is-melting');
+        setTimeout(() => { if (isMelting) allElements.mainContainer.classList.add('is-faded'); }, 7000);
+
+        let startTime = null;
+        const animateMelt = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const progress = timestamp - startTime;
+            meltAmount = Math.min(progress / 200, 80); // Animate from 0 to 80 over 10 seconds
+            if(allElements.meltDisplacement) {
+                allElements.meltDisplacement.scale.baseVal = meltAmount;
+            }
+            meltAnimation = requestAnimationFrame(animateMelt);
+        };
+        meltAnimation = requestAnimationFrame(animateMelt);
+    };
+
+    const stopMelting = () => {
+        if (!isMelting) return;
+        isMelting = false;
+        console.log("Activity detected. Reverting melt sequence.");
+        cancelAnimationFrame(meltAnimation);
+        allElements.mainContainer.classList.remove('is-melting', 'is-faded');
+        meltAmount = 0;
+        if(allElements.meltDisplacement) {
+            allElements.meltDisplacement.scale.baseVal = 0;
+        }
+    };
+
+    const resetInactivityTimer = () => {
+        stopMelting();
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(startMelting, 10000); // 10 seconds
+    };
+    
     // --- EASTER EGGS ---
 
     // Easter Egg 1: Plane Crash
@@ -525,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const sushi = document.createElement('div');
                 sushi.className = 'sushi-rain';
-                sushi.textContent = '🍣';
+                sushi.textContent = '�';
                 sushi.style.left = `${Math.random() * 100}vw`;
                 sushi.style.animationDuration = `${Math.random() * 2 + 2}s`;
                 document.body.appendChild(sushi);
@@ -543,39 +651,61 @@ document.addEventListener('DOMContentLoaded', () => {
     allElements.colorOrbBlack?.addEventListener('click', () => { terminalCommands.theme('default'); });
     allElements.colorOrbWhite?.addEventListener('click', () => { terminalCommands.theme('synthwave'); });
 
-    // Easter Egg 7: Credits Roll
+    // Easter Egg 7: Epic Credits Roll
     let footerClicks = 0;
     let footerTimeout;
     function showCredits() {
         allElements.creditsContent.innerHTML = `
-            <h2 class="text-4xl font-bold mb-8">Andrew's World</h2>
-            <p class="text-2xl mb-4">A project by</p>
-            <p class="text-3xl font-bold mb-12">Andrew</p>
-            <p class="text-xl mb-2">Lead Developer</p>
-            <p class="text-2xl font-bold mb-8">Andrew</p>
-            <p class="text-xl mb-2">UI/UX Designer</p>
-            <p class="text-2xl font-bold mb-8">Andrew</p>
-            <p class="text-xl mb-2">Chief Easter Egg Officer</p>
-            <p class="text-2xl font-bold mb-8">Andrew</p>
-            <p class="text-xl mt-12 mb-4">Beta Testers</p>
-            <p class="text-2xl font-bold mb-8">Roma (Brother)</p>
-            <p class="text-xl mt-12 mb-4">Special Thanks</p>
-            <p class="text-2xl font-bold mb-2">Mom (Lera)</p>
-            <p class="text-2xl font-bold mb-2">Dad (Artem)</p>
-            <p class="text-2xl font-bold mb-8">My Friends</p>
-            <p class="text-lg mt-16">Thanks for playing!</p>
+            <div class="p-4" style="padding-bottom: 50vh;">
+                <h2 class="text-6xl font-black mb-12 uppercase tracking-widest neon-text" style="--primary-color: #fff; --primary-glow: rgba(255,255,255,0.5);">A Project By Andrew</h2>
+                <div class="space-y-12 text-2xl text-gray-300 max-w-4xl mx-auto">
+                    <p>For three intense days and nights, a world was forged from logic and imagination.</p>
+                    <p>Battling complex algorithms, elusive bugs, and the ever-present threat of a system crash, this digital experience was brought to life.</p>
+                    <p class="font-bold text-white text-3xl my-8">I, Andrew, am the architect of this reality.</p>
+                    <p>Every line of code represented a challenge to overcome. Every animation was a small victory. This was not just a school project; it was a testament to passion and the endless pursuit of creation.</p>
+                    <p>This entire website, from the interactive particles to the hidden secrets, was built from scratch.</p>
+                    
+                    <div class="py-12">
+                        <p class="text-3xl font-bold mb-4 text-cyan-300">Chief Beta Tester & Sparring Partner</p>
+                        <p class="text-4xl font-bold">Roma</p>
+                    </div>
+
+                    <div class="py-12">
+                         <p class="text-3xl font-bold mb-4 text-cyan-300">Moral Support & Inspiration</p>
+                         <p class="text-4xl font-bold mb-2">Mom (Lera)</p>
+                         <p class="text-4xl font-bold">Dad (Artem)</p>
+                    </div>
+                     <p class="text-3xl mt-16">And to you, for exploring my world.</p>
+                     <p class="text-4xl font-bold mt-4">Thank you.</p>
+                </div>
+            </div>
         `;
+        // Reset animation to ensure it plays again
+        allElements.creditsContent.style.animation = 'none';
+        allElements.creditsContent.offsetHeight; // Trigger reflow
+        allElements.creditsContent.style.animation = ''; 
+
         allElements.creditsOverlay.classList.add('show');
         playSound('synth', 'C4', '1n');
-        allElements.creditsContent.addEventListener('animationend', () => {
+
+        const endCredits = () => {
             allElements.creditsOverlay.classList.remove('show');
-        }, {once: true});
-        allElements.creditsOverlay.addEventListener('click', () => {
-             allElements.creditsOverlay.classList.remove('show');
-             allElements.creditsContent.style.animation = 'none'; // Stop animation
-        }, {once: true})
+            allElements.creditsOverlay.removeEventListener('click', endCredits);
+        };
+        
+        const animationEndHandler = () => {
+            endCredits();
+            allElements.creditsContent.removeEventListener('animationend', animationEndHandler);
+        };
+
+        allElements.creditsContent.addEventListener('animationend', animationEndHandler);
+        allElements.creditsOverlay.addEventListener('click', endCredits);
     }
-    allElements.pageFooter?.addEventListener('click', () => {
+
+    allElements.pageFooter?.addEventListener('click', (e) => {
+        // Only count clicks on the footer itself, not the tooltip
+        if (e.target.closest("#morse-dot") || e.target.closest("#morse-tooltip")) return;
+
         clearTimeout(footerTimeout);
         footerClicks++;
         playSound('pluck', `C${3 + footerClicks}`, '16n');
@@ -591,6 +721,49 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('blur', () => { document.title = 'Hey, come back! 👀'; });
     window.addEventListener('focus', () => { document.title = docTitle; });
 
+    // Easter Egg 9: Morse Code
+    const morseSequence = [
+        // H (....)
+        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 },
+        { type: 'gap', duration: 240 }, // letter gap
+        // E (.)
+        { type: 'dot', duration: 80 },
+        { type: 'gap', duration: 240 }, // letter gap
+        // L (.-..)
+        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 },
+        { type: 'gap', duration: 240 }, // letter gap
+        // P (.--.)
+        { type: 'dot', duration: 80 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dash', duration: 240 }, { type: 'gap', duration: 80 }, { type: 'dot', duration: 80 },
+        { type: 'gap', duration: 1000 } // word gap
+    ];
+
+    let morseIndex = 0;
+    function playMorseCode() {
+        if (!allElements.morseDot) return;
+
+        const currentSignal = morseSequence[morseIndex];
+        const footerIsVisible = isElementInViewport(allElements.pageFooter);
+        
+        if (currentSignal.type === 'dot' || currentSignal.type === 'dash') {
+            allElements.morseDot.classList.remove('off');
+            if(footerIsVisible){
+                 playSound('morse', 'A5', currentSignal.type === 'dot' ? '32n' : '16n', 0);
+            }
+        } else {
+            allElements.morseDot.classList.add('off');
+        }
+
+        morseIndex = (morseIndex + 1) % morseSequence.length;
+        setTimeout(playMorseCode, currentSignal.duration);
+    }
+
+    // --- Start all dynamic processes ---
+    resetInactivityTimer();
+    window.addEventListener('mousemove', resetInactivityTimer);
+    window.addEventListener('keypress', resetInactivityTimer);
+    window.addEventListener('scroll', resetInactivityTimer);
+
+    setTimeout(playMorseCode, 2000); // Start morse code after a delay
 });
 </script>
 </body>
