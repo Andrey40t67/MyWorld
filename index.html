@@ -11,32 +11,42 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         :root {
-            --primary-glow: rgba(0, 255, 170, 0.7);
             --primary-color: #0fa;
+            --primary-glow: rgba(0, 255, 170, 0.7);
+            --bg-color: #121212;
+            --card-bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333;
         }
+
+        /* --- Themeable Body --- */
         body {
-            background-color: #121212;
-            color: #e0e0e0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
+            transition: background-color 0.5s ease, color 0.5s ease;
         }
+
+        /* --- Enhanced Animations --- */
         .neon-text {
             color: #fff;
             text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff, 0 0 42px var(--primary-color), 0 0 82px var(--primary-color), 0 0 92px var(--primary-color), 0 0 102px var(--primary-color), 0 0 151px var(--primary-color);
             animation: flicker 1.5s infinite alternate;
         }
+
         .card {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             cursor: pointer;
         }
         .card-hover-rotate:hover { transform: translateY(-15px) scale(1.05) rotate(-2deg); box-shadow: 0 0 40px var(--primary-glow); }
         .card-hover-lift:hover { transform: translateY(-12px); box-shadow: 0 20px 30px rgba(0,0,0,0.4), 0 0 40px var(--primary-glow); }
         .card-hover-3d:hover { transform: perspective(1000px) rotateY(10deg) rotateX(5deg) scale3d(1.05, 1.05, 1.05); box-shadow: 0 0 50px var(--primary-glow); }
-        
+
         .glitch { position: relative; }
-        .glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #121212; overflow: hidden; }
+        .glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); overflow: hidden; }
         .glitch::before { left: 3px; text-shadow: -2px 0 red; animation: glitch-anim-1 2.5s infinite linear alternate-reverse; }
         .glitch::after { left: -3px; text-shadow: -2px 0 blue; animation: glitch-anim-2 2.5s infinite linear alternate-reverse; }
         @keyframes flicker { 0%,18%,22%,25%,53%,57%,100% { text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px var(--primary-color), 0 0 80px var(--primary-color), 0 0 90px var(--primary-color), 0 0 100px var(--primary-color), 0 0 150px var(--primary-color); } 20%,24%,55% { text-shadow: none; } }
@@ -47,32 +57,37 @@
         .card.active .details-content { max-height: 500px; padding: 1.5rem; border-top-color: #444; }
         .details-content p { opacity: 0; transform: translateY(10px); animation: fadeInDetail 0.5s forwards 0.3s; }
         @keyframes fadeInDetail { to { opacity: 1; transform: translateY(0); } }
-        
-        .plane-clone {
-            position: fixed;
-            z-index: 9999;
-            font-size: 4.5rem;
-            animation: plane-crash 3s forwards ease-in-out;
-            pointer-events: none;
+
+        /* --- Button Shine Effect --- */
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+            transition: color 0.3s ease-out, transform 0.2s ease-out;
         }
-        @keyframes plane-crash {
-            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
-            30% { transform: translate(-15vw, -30vh) rotate(-30deg) scale(1.2); }
-            60% { transform: translate(10vw, -10vh) rotate(20deg) scale(1.1); }
-            100% { transform: translate(-30vw, 150vh) rotate(-90deg) scale(0.5); opacity: 0; }
+        .btn-shine::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s ease;
         }
-        .explosion-container {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 200px;
-            pointer-events: none; z-index: 1000;
+        .btn-shine:hover::before {
+            left: 100%;
         }
-        .explosion-particle {
-            position: absolute; bottom: 0; border-radius: 50%;
-            background-color: orange; animation: explode 0.8s forwards;
+        .btn-shine:hover {
+            transform: scale(1.05);
+            color: #fff;
         }
-        @keyframes explode {
-            from { transform: translate(var(--x-from), 0) scale(1); opacity: 1; }
-            to { transform: translate(var(--x-to), var(--y-to)) scale(0); opacity: 0; }
-        }
+
+        /* --- Easter Egg Styles --- */
+        .plane-clone { position: fixed; z-index: 9999; font-size: 4.5rem; animation: plane-crash 3s forwards ease-in-out; pointer-events: none; }
+        @keyframes plane-crash { 0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; } 30% { transform: translate(-15vw, -30vh) rotate(-30deg) scale(1.2); } 60% { transform: translate(10vw, -10vh) rotate(20deg) scale(1.1); } 100% { transform: translate(-30vw, 150vh) rotate(-90deg) scale(0.5); opacity: 0; } }
+        .explosion-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 200px; pointer-events: none; z-index: 1000; }
+        .explosion-particle { position: absolute; bottom: 0; border-radius: 50%; background-color: orange; animation: explode 0.8s forwards; }
+        @keyframes explode { from { transform: translate(var(--x-from), 0) scale(1); opacity: 1; } to { transform: translate(var(--x-to), var(--y-to)) scale(0); opacity: 0; } }
 
         #hacker-terminal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; font-family: 'Fira Code', monospace; color: #0f0; padding: 20px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; overflow: hidden; }
         #hacker-terminal.visible { opacity: 1; pointer-events: all; }
@@ -81,12 +96,20 @@
         .hacker-error { color: #f00; } .hacker-success { color: #0f0; } .hacker-warning { color: #ff0; }
 
         #secret-terminal-input { background: #111; border: 1px solid var(--primary-color); color: var(--primary-color); font-family: 'Fira Code', monospace; }
-        #code-runner-textarea { font-family: 'Fira Code', monospace !important; background-color: #282c34 !important; color: #abb2bf !important; border: 1px solid #444 !important; color-scheme: dark; }
-        #code-runner-output { font-family: 'Fira Code', monospace; background-color: #1a1a1a; color: #0f0; border: 1px solid #333; min-height: 50px; }
+        #code-runner-textarea { font-family: 'Fira Code', monospace !important; background-color: #282c34 !important; color: #abb2bf !important; border: 1px solid var(--border-color) !important; color-scheme: dark; transition: border-color 0.5s ease;}
+        #code-runner-output { font-family: 'Fira Code', monospace; background-color: #1a1a1a; color: #0f0; border: 1px solid var(--border-color); min-height: 50px; transition: border-color 0.5s ease; }
         #matrix-canvas { position: fixed; top: 0; left: 0; z-index: -1; display: none; }
-        #notification { position: fixed; top: 20px; right: 20px; background-color: var(--primary-color); color: #121212; padding: 1rem; border-radius: 0.5rem; font-weight: bold; z-index: 9999; opacity: 0; transition: opacity 0.5s, transform 0.5s; transform: translateX(100%); }
+        #notification { position: fixed; top: 20px; right: 20px; background-color: var(--primary-color); color: var(--bg-color); padding: 1rem; border-radius: 0.5rem; font-weight: bold; z-index: 9999; opacity: 0; transition: opacity 0.5s, transform 0.5s, background-color 0.5s ease; transform: translateX(100%); }
         #notification.show { opacity: 1; transform: translateX(0); }
         .quest-button, .quiz-option, #run-code-btn { border: 1px solid var(--primary-color); box-shadow: 0 0 5px var(--primary-glow); }
+        .color-orb { cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .color-orb:hover { transform: scale(1.2); box-shadow: 0 0 15px 5px var(--primary-glow); }
+        #credits-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9998; color: #fff; pointer-events: none; opacity: 0; transition: opacity 0.5s; display: flex; justify-content: center; align-items: flex-end; }
+        #credits-overlay.show { opacity: 1; pointer-events: auto; }
+        #credits-content { position: relative; font-family: 'Inter', sans-serif; text-align: center; animation: scroll-credits 20s linear forwards; }
+        @keyframes scroll-credits { from { transform: translateY(100vh); } to { transform: translateY(-100%); } }
+        .sushi-rain { position: fixed; top: -50px; font-size: 2rem; z-index: 1001; pointer-events: none; animation: fall 3s linear forwards; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
     </style>
 </head>
 <body class="bg-gray-900">
@@ -96,6 +119,7 @@
     <canvas id="matrix-canvas" class="fixed top-0 left-0 w-full h-full z-0"></canvas>
     <div id="notification"></div>
     <div id="explosion-container"></div>
+    <div id="credits-overlay"><div id="credits-content"></div></div>
 
     <div id="main-container" class="relative z-10 container mx-auto px-4 py-8 md:py-16 transition-transform duration-500">
         <header class="text-center mb-16 md:mb-24">
@@ -127,15 +151,15 @@
                 </div>
             </section>
 
-             <section id="hobbies-section">
+            <section id="hobbies-section">
                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">My Hobbies</h2>
                 <div class="flex flex-col md:flex-row gap-8 items-stretch">
-                    <div class="md:w-1/2 card card-hover-lift !cursor-default p-6 rounded-xl flex flex-col"><h3 class="text-2xl font-bold mb-3 text-white">Coding & Game Dev</h3><p class="text-gray-400 mb-4">This is my main passion, my digital sandbox. I love the logic of programming and the freedom of game design. It's the ultimate puzzle where I get to create the pieces and the rules. Below you can try to run a piece of code yourself!</p><div id="code-runner" class="mt-4 flex-grow flex flex-col"><textarea id="code-runner-textarea" class="w-full h-24 p-2 rounded-md resize-none">console.log("Hello, world!");</textarea><button id="run-code-btn" class="mt-2 quest-button text-white font-bold py-2 px-4 rounded-md">Run Code</button><p class="text-sm text-gray-400 mt-4 mb-1">Output:</p><div id="code-runner-output" class="w-full p-2 rounded-md flex-grow"></div></div></div>
+                    <div class="md:w-1/2 card card-hover-lift !cursor-default p-6 rounded-xl flex flex-col"><h3 class="text-2xl font-bold mb-3 text-white">Coding & Game Dev</h3><p class="text-gray-400 mb-4">This is my main passion, my digital sandbox. I love the logic of programming and the freedom of game design. It's the ultimate puzzle where I get to create the pieces and the rules. Below you can try to run a piece of code yourself!</p><div id="code-runner" class="mt-4 flex-grow flex flex-col"><textarea id="code-runner-textarea" class="w-full h-24 p-2 rounded-md resize-none">console.log("Hello, world!");</textarea><button id="run-code-btn" class="mt-2 quest-button text-white font-bold py-2 px-4 rounded-md btn-shine">Run Code</button><p class="text-sm text-gray-400 mt-4 mb-1">Output:</p><div id="code-runner-output" class="w-full p-2 rounded-md flex-grow"></div></div></div>
                     <div class="md:w-1/2 card card-hover-lift !cursor-default p-6 rounded-xl flex flex-col"><h3 class="text-2xl font-bold mb-3 text-white">Friends</h3><p class="text-gray-400 flex-grow">Beyond the screen, I love spending time with my friends. We can conquer virtual worlds in co-op games, explore the real world on our bikes, or just hang out and talk about everything and nothing. They are the best part of any day.</p></div>
                 </div>
             </section>
 
-             <section>
+            <section>
                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-cyan-300">My Pets</h2>
                 <p class="text-center text-gray-400 mb-10">And these are my fluffy companions. Click to learn more.</p>
                 <div id="pets-accordion" class="flex flex-col md:flex-row gap-8 items-stretch">
@@ -144,15 +168,15 @@
                 </div>
             </section>
             
-             <section>
+            <section>
                  <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">My Favorites</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                     <div class="card card-hover-lift !cursor-default p-6 rounded-xl col-span-1 md:col-span-2"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Food</h3><div class="flex justify-around items-center h-full"><div class="text-center p-4"><span class="text-5xl">🍣</span><p class="mt-2 text-lg">Sushi & Rolls</p></div><div class="text-center p-4"><span class="text-5xl">🍕</span><p class="mt-2 text-lg">Pizza</p></div></div></div>
-                    <div class="card card-hover-lift !cursor-default p-6 rounded-xl"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Colors</h3><div class="flex justify-center items-center h-full gap-4"><div class="w-16 h-16 bg-black border-2 border-gray-500 rounded-full"></div><div class="w-16 h-16 bg-white border-2 border-gray-500 rounded-full"></div></div><p class="text-center text-sm mt-4 text-gray-400">Black & White - a classic choice!</p></div>
+                     <div class="card card-hover-lift !cursor-default p-6 rounded-xl col-span-1 md:col-span-2"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Food</h3><div class="flex justify-around items-center h-full"><div id="sushi-icon" class="text-center p-4 cursor-pointer transition-transform duration-200 hover:scale-125"><span class="text-5xl">🍣</span><p class="mt-2 text-lg">Sushi & Rolls</p></div><div class="text-center p-4"><span class="text-5xl">🍕</span><p class="mt-2 text-lg">Pizza</p></div></div></div>
+                    <div class="card card-hover-lift !cursor-default p-6 rounded-xl"><h3 class="text-2xl font-bold mb-4 text-white">Favorite Colors</h3><div class="flex justify-center items-center h-full gap-4"><div id="color-orb-black" class="w-16 h-16 bg-black border-2 border-gray-500 rounded-full color-orb"></div><div id="color-orb-white" class="w-16 h-16 bg-white border-2 border-gray-500 rounded-full color-orb"></div></div><p class="text-center text-sm mt-4 text-gray-400">Black & White - a classic choice!</p></div>
                 </div>
             </section>
 
-             <section>
+            <section>
                  <h2 class="text-3xl md:text-4xl font-bold text-center mb-10 text-cyan-300">Travel Plans</h2>
                  <div class="card card-hover-rotate !cursor-default p-8 rounded-xl flex flex-col md:flex-row items-center gap-8">
                      <div id="travel-plane-icon" class="text-7xl transition-transform duration-300 hover:scale-125 cursor-pointer">✈️</div>
@@ -160,279 +184,414 @@
                  </div>
             </section>
 
-            <footer class="text-center pt-8">
+            <footer id="page-footer" class="text-center pt-8 cursor-pointer">
                  <p class="text-xl text-gray-400">Thanks for visiting my world!</p>
             </footer>
         </main>
     </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log("%cHey, curious developer! You found a secret. Try the Konami Code, or click on the word 'architect' in my bio and type 'cat_mode'. ;) - Andrew", "color: #0fa; font-size: 16px; font-weight: bold;");
-        
-        let toneReady = false;
-        const sounds = {};
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Initial Setup & Console Welcome ---
+    console.log("%cHey there, explorer! The rabbit hole is deeper than you think. Try 'help' in the secret terminal or discover other hidden interactions. - Andrew", "color: #0fa; font-size: 16px; font-weight: bold;");
+    
+    // --- Global Elements Object ---
+    const allElements = {
+        mainTitle: document.getElementById('main-title'),
+        hackerTerm: document.getElementById('hacker-terminal'),
+        hackerCodeEl: document.getElementById('hacker-code'),
+        hobbiesSect: document.getElementById('hobbies-section'),
+        runCodeBtn: document.getElementById('run-code-btn'),
+        architectTrigger: document.getElementById('architect-trigger'),
+        secretInput: document.getElementById('secret-terminal-input'),
+        planeIcon: document.getElementById('travel-plane-icon'),
+        yunisCard: document.getElementById('yunis-card'),
+        kukiCard: document.getElementById('kuki-card'),
+        matrixCanvas: document.getElementById('matrix-canvas'),
+        notificationEl: document.getElementById('notification'),
+        particleCanvas: document.getElementById('particle-canvas'),
+        sushiIcon: document.getElementById('sushi-icon'),
+        colorOrbBlack: document.getElementById('color-orb-black'),
+        colorOrbWhite: document.getElementById('color-orb-white'),
+        pageFooter: document.getElementById('page-footer'),
+        creditsOverlay: document.getElementById('credits-overlay'),
+        creditsContent: document.getElementById('credits-content'),
+    };
+    
+    // --- Sound Engine ---
+    let toneReady = false;
+    const sounds = {};
+    const soundCooldowns = {};
 
-        function initializeSounds() {
-            if (typeof Tone === 'undefined' || toneReady) return;
+    function initializeSounds() {
+        if (typeof Tone === 'undefined' || toneReady) return;
+        try {
+            sounds.synth = new Tone.Synth().toDestination();
+            sounds.noise = new Tone.NoiseSynth({noise:{type:'white'}, envelope:{attack:0.005, decay:0.1, sustain:0}}).toDestination();
+            sounds.membrane = new Tone.MembraneSynth().toDestination();
+            sounds.pluck = new Tone.PluckSynth().toDestination();
+            sounds.metal = new Tone.MetalSynth({frequency: 150, envelope: {attack: 0.001, decay: 0.4, release: 0.2}, harmonicity: 8.5, modulationIndex: 20, resonance: 4000, octaves: 1.5}).toDestination();
+            toneReady = true;
+        } catch (e) {
+            console.error("Failed to initialize Tone.js:", e);
+        }
+    }
+    
+    document.body.addEventListener('click', async () => {
+        if (!toneReady) initializeSounds();
+        if (toneReady && Tone.context.state !== 'running') {
             try {
-                sounds.synth = new Tone.Synth().toDestination();
-                sounds.noise = new Tone.NoiseSynth({noise:{type:'white'}, envelope:{attack:0.005, decay:0.1, sustain:0}}).toDestination();
-                sounds.membrane = new Tone.MembraneSynth().toDestination();
-                toneReady = true;
-                console.log("Tone.js initialized.");
+                await Tone.start();
             } catch (e) {
-                console.error("Failed to initialize Tone.js:", e);
+                console.error("Tone.start() failed:", e);
             }
         }
+    }, { once: true });
+
+    function playSound(sound, note, duration, cooldown = 100) {
+        if (!toneReady || !sounds[sound] || Tone.context.state !== 'running') return;
+        const now = performance.now();
+        const lastPlayed = soundCooldowns[sound] || 0;
+        if (now - lastPlayed < cooldown) return;
+        soundCooldowns[sound] = now;
+        try {
+            sounds[sound].triggerAttackRelease(note, duration);
+        } catch (e) {
+            console.error("Sound error:", e);
+        }
+    }
+
+    // --- Interactive Particles ---
+    const pCanvas = allElements.particleCanvas;
+    if (pCanvas) {
+        const pCtx = pCanvas.getContext('2d');
+        let particlesArray;
+        const mouse = { x: null, y: null, radius: 100 };
+
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.x;
+            mouse.y = e.y + window.scrollY;
+        });
+        window.addEventListener('mouseout', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
         
-        document.body.addEventListener('click', async () => {
-            if (!toneReady) initializeSounds();
-            if (toneReady && Tone.context.state !== 'running') {
-                try {
-                    await Tone.start();
-                    console.log("AudioContext started by user interaction.");
-                } catch (e) {
-                    console.error("Tone.start() failed:", e);
-                }
+        const setupCanvas = () => {
+            pCanvas.width = window.innerWidth;
+            pCanvas.height = document.body.scrollHeight;
+            let num = Math.min(200, (window.innerWidth * pCanvas.height) / 9000); // Capped for performance
+            particlesArray = [];
+            for (let i = 0; i < num; i++) {
+                let s = (Math.random() * 2) + 1;
+                let x = Math.random() * (innerWidth - s * 2) + s * 2;
+                let y = Math.random() * (pCanvas.height - s * 2) + s * 2;
+                let dX = (Math.random() * 0.4) - 0.2;
+                let dY = (Math.random() * 0.4) - 0.2;
+                particlesArray.push({ x, y, dX, dY, s, c: 'rgba(0, 255, 170, 0.3)' });
             }
-        }, { once: true });
-
-        const soundCooldowns = {};
-        function playSound(sound, note, duration, cooldown = 100) {
-            if (!toneReady || !sounds[sound] || Tone.context.state !== 'running') return;
-            const now = performance.now();
-            const lastPlayed = soundCooldowns[sound] || 0;
-            if (now - lastPlayed < cooldown) return;
-            soundCooldowns[sound] = now;
-            try {
-                sounds[sound].triggerAttackRelease(note, duration);
-            } catch (e) {
-                console.error("Sound error:", e);
-            }
-        }
-        
-        const notificationEl = document.getElementById('notification');
-        function showNotification(message, playSnd = true) {
-            if(!notificationEl) return;
-            if (playSnd) playSound('synth', 'G5', '16n');
-            notificationEl.textContent = message;
-            notificationEl.classList.add('show');
-            setTimeout(() => notificationEl.classList.remove('show'), 3000);
-        }
-
-        const pCanvas = document.getElementById('particle-canvas');
-        if (pCanvas) {
-            const pCtx = pCanvas.getContext('2d');
-            let particlesArray;
-            const setupCanvas = () => {
-                pCanvas.width = window.innerWidth; 
-                pCanvas.height = document.body.scrollHeight;
-                let num = (window.innerWidth * document.body.scrollHeight) / 9000;
-                particlesArray = [];
-                for (let i = 0; i < num; i++) {
-                    let s = (Math.random() * 2) + 1; let x = Math.random() * (innerWidth-s*2)+s*2; let y = Math.random()*(document.body.scrollHeight-s*2)+s*2;
-                    let dX = (Math.random() * 0.4)-0.2; let dY = (Math.random()*0.4)-0.2;
-                    particlesArray.push({x,y,dX,dY,s,c:'rgba(0, 255, 170, 0.3)'});
-                }
-            };
-            const animateParticles = () => {
-                if (!particlesArray) return;
-                requestAnimationFrame(animateParticles); pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-                particlesArray.forEach(p => {
-                    if (p.x>pCanvas.width || p.x<0) p.dX=-p.dX; if (p.y>pCanvas.height || p.y<0) p.dY=-p.dY;
-                    p.x+=p.dX; p.y+=p.dY;
-                    pCtx.beginPath(); pCtx.arc(p.x, p.y, p.s, 0, Math.PI*2, false); pCtx.fillStyle=p.c; pCtx.fill();
-                });
-            };
-            setupCanvas(); animateParticles();
-            let resizeTimer;
-            window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupCanvas, 250); });
-        }
-
-        const allElements = {
-            mainTitle: document.getElementById('main-title'),
-            hackerTerm: document.getElementById('hacker-terminal'),
-            hackerCodeEl: document.getElementById('hacker-code'),
-            hobbiesSect: document.getElementById('hobbies-section'),
-            runCodeBtn: document.getElementById('run-code-btn'),
-            architectTrigger: document.getElementById('architect-trigger'),
-            secretInput: document.getElementById('secret-terminal-input'),
-            planeIcon: document.getElementById('travel-plane-icon'),
-            yunisCard: document.getElementById('yunis-card'),
-            kukiCard: document.getElementById('kuki-card'),
-            matrixCanvas: document.getElementById('matrix-canvas')
         };
-        
-        const textsToCycle = ["Hello, I'm Andrew!", "Welcome to my world.", "SYSTEM COMPROMISED"];
-        let txtIdx = 0, charIdx = 0, isDel = false;
-        function typeDeleteLoop() {
-            if (!allElements.mainTitle) return;
-            const currentText = textsToCycle[txtIdx];
-            allElements.mainTitle.setAttribute('data-text', currentText);
-            if (Math.random() < 0.05) { allElements.mainTitle.classList.add('glitch'); setTimeout(() => allElements.mainTitle.classList.remove('glitch'), 200); }
-            if (isDel) { allElements.mainTitle.textContent = currentText.substring(0, charIdx--); } 
-            else { allElements.mainTitle.textContent = currentText.substring(0, charIdx++); }
-            if (!isDel && charIdx > currentText.length) { isDel = true; setTimeout(typeDeleteLoop, 2000); } 
-            else if (isDel && charIdx < 0) { isDel = false; txtIdx = (txtIdx + 1) % textsToCycle.length; setTimeout(typeDeleteLoop, 500); }
-            else { setTimeout(typeDeleteLoop, isDel ? 60: 120); }
-        }
-        typeDeleteLoop();
-        
-        function setupAccordion(containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            container.querySelectorAll('.card').forEach((card, index) => {
-                card.addEventListener('click', (e) => {
-                    if(e.target.closest("#architect-trigger") || e.target.closest("#secret-terminal-input")) return;
-                    const isActive = card.classList.contains('active');
-                    playSound('synth', isActive ? 'C3' : 'A3', '16n', `accordion-${index}`);
-                    container.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-                    if (!isActive) card.classList.add('active');
-                });
+
+        const animateParticles = () => {
+            if (!particlesArray) return;
+            requestAnimationFrame(animateParticles);
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+            particlesArray.forEach(p => {
+                let dxMouse = p.x - mouse.x;
+                let dyMouse = p.y - mouse.y;
+                let distance = Math.sqrt(dxMouse*dxMouse + dyMouse*dyMouse);
+                if (distance < mouse.radius) {
+                    const force = (mouse.radius - distance) / mouse.radius;
+                    p.x += dxMouse / distance * force * 2;
+                    p.y += dyMouse / distance * force * 2;
+                }
+                
+                if (p.x > pCanvas.width || p.x < 0) p.dX = -p.dX;
+                if (p.y > pCanvas.height || p.y < 0) p.dY = -p.dY;
+                
+                p.x += p.dX; p.y += p.dY;
+                pCtx.beginPath(); pCtx.arc(p.x, p.y, p.s, 0, Math.PI * 2, false); pCtx.fillStyle = p.c; pCtx.fill();
             });
+        };
+        setupCanvas();
+        animateParticles();
+        let resizeTimer;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(setupCanvas, 250); });
+    }
+    
+    // --- Core Functionality & UI ---
+    function showNotification(message, playSnd = true) {
+        if(!allElements.notificationEl) return;
+        if (playSnd) playSound('synth', 'G5', '16n');
+        allElements.notificationEl.textContent = message;
+        allElements.notificationEl.classList.add('show');
+        setTimeout(() => allElements.notificationEl.classList.remove('show'), 3000);
+    }
+    
+    const textsToCycle = ["Hello, I'm Andrew!", "Welcome to my world.", "SYSTEM COMPROMISED"];
+    let txtIdx = 0, charIdx = 0, isDel = false;
+    function typeDeleteLoop() {
+        if (!allElements.mainTitle) return;
+        const currentText = textsToCycle[txtIdx];
+        allElements.mainTitle.setAttribute('data-text', currentText);
+        if (currentText === "SYSTEM COMPROMISED" && Math.random() < 0.1) {
+             allElements.mainTitle.classList.add('glitch');
+             setTimeout(() => allElements.mainTitle.classList.remove('glitch'), 300);
         }
-        setupAccordion('family-accordion');
-        setupAccordion('pets-accordion');
+        if (isDel) { allElements.mainTitle.textContent = currentText.substring(0, charIdx--); } 
+        else { allElements.mainTitle.textContent = currentText.substring(0, charIdx++); }
+        if (!isDel && charIdx > currentText.length) { isDel = true; setTimeout(typeDeleteLoop, 2000); } 
+        else if (isDel && charIdx < 0) { isDel = false; txtIdx = (txtIdx + 1) % textsToCycle.length; setTimeout(typeDeleteLoop, 500); }
+        else { setTimeout(typeDeleteLoop, isDel ? 60: 120); }
+    }
+    typeDeleteLoop();
 
-        const hackerScript = [
-            { a: 't', t: '> Initializing neuro-link...\n', d: 40 }, { a: 't', t: '> Connecting to central server... ', d: 50 }, { a: 'p', dur: 500 }, { a: 't', t: '<span class="hacker-error">ACCESS DENIED.</span>\n', d: 80 },
-            { a: 'p', dur: 300 }, { a: 't', t: '> Rerouting through quantum proxy... <span class="hacker-warning">Firewall detected.</span>\n', d: 30 },
-            { a: 't', t: '> Deploying Ice-Breaker v3.4... [', d: 40 }, { a: 't', t: '▓', d: 150 }, { a: 't', t: '▓', d: 200 }, { a: 't', t: '▓', d: 120 }, { a: 't', t: '▓', d: 250 }, { a: 't', t: '▓', d: 180 }, { a: 't', t: '] ', d: 100 },
-            { a: 'p', dur: 300 }, { a: 't', t: '<span class="hacker-success">SUCCESS.</span>\n\n', d: 50 },
-            { a: 't', t: '>>> <span class="hacker-warning">SYSTEM COMPROMISED</span> <<<\n> Loading user data: ANDREW_K.profile\n> Decrypting passions.dat...\n\n', d: 20 },
-            { a: 't', t: '#include <iostream>\n\nint main() {\n    std::cout << "PASSION: UNLEASHED" << std::endl;\n    return 0;\n}\n\n', d: 25 },
-            { a: 't', t: '> Data loaded.\n> <span class="hacker-error">!! INTRUSION DETECTED !!</span>\n> Shutting down terminal to erase tracks...', d: 50 },
-        ];
-        async function runHackerScript() {
-            allElements.hackerCodeEl.innerHTML = '';
-            for (const cmd of hackerScript) {
-                if (cmd.a === 't') for (const char of cmd.t) { allElements.hackerCodeEl.innerHTML += char; await new Promise(r => setTimeout(r, cmd.d)); }
-                else if (cmd.a === 'p') await new Promise(r => setTimeout(r, cmd.dur));
-            }
-            setTimeout(() => { allElements.hackerTerm.classList.remove('visible'); document.body.style.overflow = 'auto'; }, 2000);
-        }
-        const hackerObserver = new IntersectionObserver((entries, observer) => {
-            if (entries[0].isIntersecting) {
-                allElements.hackerTerm.classList.add('visible');
-                document.body.style.overflow = 'hidden';
-                runHackerScript();
-                observer.disconnect();
-            }
-        }, { threshold: 0.6 });
-        if(allElements.hobbiesSect) hackerObserver.observe(allElements.hobbiesSect);
-
-        allElements.runCodeBtn?.addEventListener('click', () => {
-            playSound('synth', 'E5', '16n');
-            const codeTextarea = document.getElementById('code-runner-textarea');
-            const codeOutput = document.getElementById('code-runner-output');
-            codeOutput.innerHTML = '';
-            const oldLog = console.log;
-            console.log = (...args) => { const msg = args.map(a => typeof a ==='object' ? JSON.stringify(a,null,2) : a).join(' '); codeOutput.innerHTML += `<div>> ${msg}</div>`; oldLog.apply(console,args); };
-            try { new Function(codeTextarea.value)(); } catch (e) { codeOutput.innerHTML += `<div class="text-red-500">> Error: ${e.message}</div>`; }
-            console.log = oldLog;
+    function setupAccordion(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.querySelectorAll('.card').forEach((card, index) => {
+            card.addEventListener('click', (e) => {
+                if(e.target.closest("#architect-trigger") || e.target.closest("#secret-terminal-input")) return;
+                const isActive = card.classList.contains('active');
+                playSound('pluck', isActive ? 'C3' : 'A3', '16n', 200);
+                container.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+                if (!isActive) card.classList.add('active');
+            });
         });
+    }
+    setupAccordion('family-accordion');
+    setupAccordion('pets-accordion');
 
-        // --- EASTER EGGS ---
-        allElements.planeIcon?.addEventListener('click', (e) => {
-            if (document.querySelector('.plane-clone')) return;
-            playSound('noise', 'C4', '0.5', 3000);
-            const plane = e.target;
-            const rect = plane.getBoundingClientRect();
-            const clone = document.createElement('div');
-            clone.innerText = '✈️';
-            clone.className = 'plane-clone';
-            clone.style.position = 'fixed';
-            clone.style.left = `${rect.left}px`;
-            clone.style.top = `${rect.top}px`;
-            document.body.appendChild(clone);
-            
-            clone.addEventListener('animationend', () => {
-                const explosionContainer = document.getElementById('explosion-container');
-                if (explosionContainer) {
-                    playSound('membrane', 'C1', '1n');
-                    const explosionX = window.innerWidth * (Math.random() * 0.4 + 0.3); // Crash near center
-                    for(let i = 0; i < 30; i++) {
-                        const particle = document.createElement('div');
-                        particle.className = 'explosion-particle';
-                        particle.style.setProperty('--x-from', `${explosionX + (Math.random() - 0.5) * 50}px`);
-                        const angle = Math.random() * Math.PI - Math.PI;
-                        const velocity = Math.random() * 200 + 100;
-                        particle.style.setProperty('--x-to', `${explosionX + Math.cos(angle) * velocity}px`);
-                        particle.style.setProperty('--y-to', `${-Math.abs(Math.sin(angle) * velocity)}px`);
-                        particle.style.backgroundColor = `hsl(${Math.random() * 60}, 100%, 50%)`;
-                        const size = Math.random() * 10 + 5;
-                        particle.style.width = `${size}px`;
-                        particle.style.height = `${size}px`;
-                        explosionContainer.appendChild(particle);
-                        setTimeout(() => particle.remove(), 800);
-                    }
-                }
-                clone.remove();
-            }, { once: true });
-        });
-        
-        allElements.architectTrigger?.addEventListener('click', () => {
-            playSound('synth', 'F#5', '16n');
-            allElements.secretInput.classList.toggle('hidden');
-            allElements.secretInput.focus();
-        });
-        let isCatMode = false;
-        allElements.secretInput?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                if (e.target.value.toLowerCase() === 'cat_mode') {
-                    isCatMode = !isCatMode;
-                    document.body.style.fontFamily = isCatMode ? 'Comic Sans MS' : '';
-                    showNotification(isCatMode ? 'Cat mode ON! Meow!' : 'Cat mode OFF.', false);
-                    playSound('synth', isCatMode ? 'A5' : 'A3', '8n');
-                }
-                e.target.value = '';
-                e.target.classList.add('hidden');
-            }
-        });
-
-        allElements.yunisCard?.addEventListener('click', () => { showNotification("Yunis thinks: 'Is it dinner time yet?'", false); playSound('synth', "C4", "8n", 500); });
-        allElements.kukiCard?.addEventListener('click', () => { showNotification("Kuki thinks: 'I see a fly...'", false); playSound('synth', "G4", "8n", 500); });
-
-        let matrixInterval, isMatrixMode = false;
-        function startMatrix() {
-            if (!allElements.matrixCanvas) return;
-            isMatrixMode = true;
-            allElements.matrixCanvas.style.display = 'block';
-            const mCtx = allElements.matrixCanvas.getContext('2d');
-            allElements.matrixCanvas.width = window.innerWidth;
-            allElements.matrixCanvas.height = window.innerHeight;
-            const alphabet = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボпоヴッн';
-            const fontSize = 16, columns = allElements.matrixCanvas.width / fontSize;
-            const rainDrops = Array(Math.floor(columns)).fill(1);
-            function drawMatrix() {
-                mCtx.fillStyle = 'rgba(18, 18, 18, 0.05)';
-                mCtx.fillRect(0, 0, allElements.matrixCanvas.width, allElements.matrixCanvas.height);
-                mCtx.fillStyle = '#0F0'; mCtx.font = fontSize + 'px monospace';
-                for (let i = 0; i < rainDrops.length; i++) {
-                    const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-                    mCtx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-                    if (rainDrops[i] * fontSize > allElements.matrixCanvas.height && Math.random() > 0.975) rainDrops[i] = 0;
-                    rainDrops[i]++;
-                }
-            }
-            matrixInterval = setInterval(drawMatrix, 33);
-        }
-        function stopMatrix() { isMatrixMode = false; if(allElements.matrixCanvas) allElements.matrixCanvas.style.display = 'none'; clearInterval(matrixInterval); }
-
-        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-        let konamiIndex = 0;
-        window.addEventListener('keydown', e => {
-            if (e.key === konamiCode[konamiIndex]) {
-                konamiIndex++;
-                if (konamiIndex === konamiCode.length) {
-                    if(isMatrixMode) { stopMatrix(); showNotification('Matrix Deactivated.', false); playSound('synth', 'C3', '2n'); } 
-                    else { startMatrix(); showNotification('Matrix Activated.', false); playSound('synth', 'C5', '2n'); }
-                    konamiIndex = 0;
-                }
-            } else { konamiIndex = 0; }
-        });
+    allElements.runCodeBtn?.addEventListener('click', () => {
+        playSound('metal', 'C5', '8n');
+        const codeTextarea = document.getElementById('code-runner-textarea');
+        const codeOutput = document.getElementById('code-runner-output');
+        codeOutput.innerHTML = '';
+        const oldLog = console.log;
+        console.log = (...args) => { const msg = args.map(a => typeof a ==='object' ? JSON.stringify(a,null,2) : a).join(' '); codeOutput.innerHTML += `<div>> ${msg}</div>`; oldLog.apply(console,args); };
+        try { new Function(codeTextarea.value)(); } catch (e) { codeOutput.innerHTML += `<div class="text-red-500">> Error: ${e.message}</div>`; }
+        console.log = oldLog;
     });
+
+    // --- EASTER EGGS ---
+
+    // Easter Egg 1: Plane Crash
+    allElements.planeIcon?.addEventListener('click', (e) => {
+        if (document.querySelector('.plane-clone')) return;
+        playSound('noise', 'C4', '0.5', 3000);
+        const plane = e.target;
+        const rect = plane.getBoundingClientRect();
+        const clone = document.createElement('div');
+        clone.innerText = '✈️';
+        clone.className = 'plane-clone';
+        clone.style.left = `${rect.left}px`;
+        clone.style.top = `${rect.top}px`;
+        document.body.appendChild(clone);
+        
+        clone.addEventListener('animationend', () => {
+            const explosionContainer = document.getElementById('explosion-container');
+            if (explosionContainer) {
+                playSound('membrane', 'C1', '1n');
+                const explosionX = window.innerWidth * (Math.random() * 0.4 + 0.3);
+                for(let i = 0; i < 30; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'explosion-particle';
+                    particle.style.setProperty('--x-from', `${explosionX + (Math.random() - 0.5) * 50}px`);
+                    const angle = Math.random() * Math.PI - Math.PI;
+                    const velocity = Math.random() * 200 + 100;
+                    particle.style.setProperty('--x-to', `${explosionX + Math.cos(angle) * velocity}px`);
+                    particle.style.setProperty('--y-to', `${-Math.abs(Math.sin(angle) * velocity)}px`);
+                    particle.style.backgroundColor = `hsl(${Math.random() * 60}, 100%, 50%)`;
+                    const size = Math.random() * 10 + 5;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    explosionContainer.appendChild(particle);
+                    setTimeout(() => particle.remove(), 800);
+                }
+            }
+            clone.remove();
+        }, { once: true });
+    });
+
+    // Easter Egg 2: Secret Terminal
+    allElements.architectTrigger?.addEventListener('click', () => {
+        playSound('pluck', 'F#5', '16n');
+        allElements.secretInput.classList.toggle('hidden');
+        allElements.secretInput.focus();
+    });
+
+    const terminalCommands = {
+        'cat_mode': () => {
+            const isCatMode = document.body.style.fontFamily === 'Comic Sans MS';
+            document.body.style.fontFamily = isCatMode ? '' : 'Comic Sans MS';
+            showNotification(isCatMode ? 'Cat mode OFF.' : 'Cat mode ON! Meow!', false);
+            playSound('synth', isCatMode ? 'A3' : 'A5', '8n');
+        },
+        'help': () => {
+            showNotification('Commands: cat_mode, theme [default|synthwave], credits', false);
+        },
+        'credits': () => {
+            showCredits();
+        },
+        'theme': (arg) => {
+            if (arg === 'synthwave') {
+                setTheme({
+                    '--primary-color': '#ff00ff',
+                    '--primary-glow': 'rgba(255, 0, 255, 0.7)',
+                    '--bg-color': '#24133a',
+                    '--card-bg-color': '#3a1f5d',
+                    '--text-color': '#f0f0f0',
+                    '--border-color': '#6c3a9e',
+                });
+                showNotification('Theme set to Synthwave!', false);
+            } else {
+                 setTheme({
+                    '--primary-color': '#0fa',
+                    '--primary-glow': 'rgba(0, 255, 170, 0.7)',
+                    '--bg-color': '#121212',
+                    '--card-bg-color': '#1e1e1e',
+                    '--text-color': '#e0e0e0',
+                    '--border-color': '#333',
+                });
+                showNotification('Theme set to Default.', false);
+            }
+            playSound('synth', 'C4', '4n');
+        }
+    };
+
+    allElements.secretInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const input = e.target.value.toLowerCase().trim();
+            const [command, arg] = input.split(' ');
+            if (terminalCommands[command]) {
+                terminalCommands[command](arg);
+            } else {
+                showNotification('Unknown command. Type "help".', false);
+                playSound('noise', 'C2', '8n');
+            }
+            e.target.value = '';
+            e.target.classList.add('hidden');
+        }
+    });
+    
+    // Easter Egg 3: Pet Thoughts
+    allElements.yunisCard?.addEventListener('click', () => { showNotification("Yunis thinks: 'Is it dinner time yet?'", false); playSound('synth', "C4", "8n", 500); });
+    allElements.kukiCard?.addEventListener('click', () => { showNotification("Kuki thinks: 'I see a shadow... ATTACK!'", false); playSound('synth', "G4", "8n", 500); });
+
+    // Easter Egg 4: Konami Code (Matrix)
+    let matrixInterval, isMatrixMode = false;
+    function startMatrix() {
+        if (!allElements.matrixCanvas) return;
+        isMatrixMode = true;
+        allElements.matrixCanvas.style.display = 'block';
+        const mCtx = allElements.matrixCanvas.getContext('2d');
+        allElements.matrixCanvas.width = window.innerWidth;
+        allElements.matrixCanvas.height = window.innerHeight;
+        const alphabet = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボпоヴッн';
+        const fontSize = 16, columns = allElements.matrixCanvas.width / fontSize;
+        const rainDrops = Array(Math.floor(columns)).fill(1);
+        function drawMatrix() {
+            mCtx.fillStyle = 'rgba(18, 18, 18, 0.05)';
+            mCtx.fillRect(0, 0, allElements.matrixCanvas.width, allElements.matrixCanvas.height);
+            mCtx.fillStyle = '#0F0'; mCtx.font = fontSize + 'px monospace';
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                mCtx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                if (rainDrops[i] * fontSize > allElements.matrixCanvas.height && Math.random() > 0.975) rainDrops[i] = 0;
+                rainDrops[i]++;
+            }
+        }
+        matrixInterval = setInterval(drawMatrix, 33);
+    }
+    function stopMatrix() { isMatrixMode = false; if(allElements.matrixCanvas) allElements.matrixCanvas.style.display = 'none'; clearInterval(matrixInterval); }
+    const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+    let konamiIndex = 0;
+    window.addEventListener('keydown', e => {
+        if (e.target === allElements.secretInput || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === konamiCode[konamiIndex]) {
+            konamiIndex++;
+            if (konamiIndex === konamiCode.length) {
+                if(isMatrixMode) { stopMatrix(); showNotification('Matrix Deactivated.', false); playSound('synth', 'C3', '2n'); } 
+                else { startMatrix(); showNotification('Matrix Activated.', false); playSound('synth', 'C5', '2n'); }
+                konamiIndex = 0;
+            }
+        } else { konamiIndex = 0; }
+    });
+    
+    // Easter Egg 5: Sushi Rain
+    allElements.sushiIcon?.addEventListener('click', () => {
+        playSound('pluck', 'E5', '8n', 500);
+        for (let i = 0; i < 15; i++) {
+            setTimeout(() => {
+                const sushi = document.createElement('div');
+                sushi.className = 'sushi-rain';
+                sushi.textContent = '🍣';
+                sushi.style.left = `${Math.random() * 100}vw`;
+                sushi.style.animationDuration = `${Math.random() * 2 + 2}s`;
+                document.body.appendChild(sushi);
+                sushi.addEventListener('animationend', () => sushi.remove());
+            }, i * 100);
+        }
+    });
+
+    // Easter Egg 6: Theme Orbs
+    function setTheme(theme) {
+        for (const [key, value] of Object.entries(theme)) {
+            document.documentElement.style.setProperty(key, value);
+        }
+    }
+    allElements.colorOrbBlack?.addEventListener('click', () => { terminalCommands.theme('default'); });
+    allElements.colorOrbWhite?.addEventListener('click', () => { terminalCommands.theme('synthwave'); });
+
+    // Easter Egg 7: Credits Roll
+    let footerClicks = 0;
+    let footerTimeout;
+    function showCredits() {
+        allElements.creditsContent.innerHTML = `
+            <h2 class="text-4xl font-bold mb-8">Andrew's World</h2>
+            <p class="text-2xl mb-4">A project by</p>
+            <p class="text-3xl font-bold mb-12">Andrew</p>
+            <p class="text-xl mb-2">Lead Developer</p>
+            <p class="text-2xl font-bold mb-8">Andrew</p>
+            <p class="text-xl mb-2">UI/UX Designer</p>
+            <p class="text-2xl font-bold mb-8">Andrew</p>
+            <p class="text-xl mb-2">Chief Easter Egg Officer</p>
+            <p class="text-2xl font-bold mb-8">Andrew</p>
+            <p class="text-xl mt-12 mb-4">Beta Testers</p>
+            <p class="text-2xl font-bold mb-8">Roma (Brother)</p>
+            <p class="text-xl mt-12 mb-4">Special Thanks</p>
+            <p class="text-2xl font-bold mb-2">Mom (Lera)</p>
+            <p class="text-2xl font-bold mb-2">Dad (Artem)</p>
+            <p class="text-2xl font-bold mb-8">My Friends</p>
+            <p class="text-lg mt-16">Thanks for playing!</p>
+        `;
+        allElements.creditsOverlay.classList.add('show');
+        playSound('synth', 'C4', '1n');
+        allElements.creditsContent.addEventListener('animationend', () => {
+            allElements.creditsOverlay.classList.remove('show');
+        }, {once: true});
+        allElements.creditsOverlay.addEventListener('click', () => {
+             allElements.creditsOverlay.classList.remove('show');
+             allElements.creditsContent.style.animation = 'none'; // Stop animation
+        }, {once: true})
+    }
+    allElements.pageFooter?.addEventListener('click', () => {
+        clearTimeout(footerTimeout);
+        footerClicks++;
+        playSound('pluck', `C${3 + footerClicks}`, '16n');
+        if (footerClicks >= 5) {
+            showCredits();
+            footerClicks = 0;
+        }
+        footerTimeout = setTimeout(() => { footerClicks = 0; }, 1500);
+    });
+
+    // Easter Egg 8: Come Back!
+    let docTitle = document.title;
+    window.addEventListener('blur', () => { document.title = 'Hey, come back! 👀'; });
+    window.addEventListener('focus', () => { document.title = docTitle; });
+
+});
 </script>
 </body>
 </html>
