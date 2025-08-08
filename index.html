@@ -1,9 +1,9 @@
- <!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Мегатрекинг рук + рисование (Canvas)</title>
+<title>Мегатрекинг (офлайн, без CDN) — рука + рисование</title>
 <style>
   :root{--ui:#9fe6ff}
   html,body{margin:0;height:100%;background:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
@@ -11,9 +11,9 @@
   canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
   #view{z-index:0} #paint{z-index:1}
   #hud{position:fixed;left:0;right:0;top:0;padding:8px 10px;color:var(--ui);font-size:12px;mix-blend-mode:screen;pointer-events:none;text-shadow:0 0 8px #0ff8}
-  #panel{position:fixed;right:8px;bottom:8px;display:flex;gap:8px;align-items:center;background:#0a0f14cc;border:1px solid #2aa9ff55;border-radius:12px;padding:8px 10px;backdrop-filter:blur(8px)}
+  #panel{position:fixed;right:8px;bottom:8px;display:flex;gap:8px;align-items:center;background:#0a0f14cc;border:1px solid #2aa9ff55;border-radius:12px;padding:8px 10px;backdrop-filter:blur(8px);z-index:3}
   #panel>*{color:#dff}
-  button,select,input[type=color],input[type=range]{background:#0c151c;border:1px solid #2aa9ff66;border-radius:8px;color:#dff;padding:8px 10px}
+  button,select,input[type=color],input[type=range]{background:#0c151c;border:1px solid #2aa9ff66;border-radius:8px;color:#dff;padding:6px 10px}
   button:active{transform:scale(.97)}
   #start{position:fixed;inset:0;margin:auto;width:max(260px,60vw);max-width:420px;height:120px;border-radius:14px;font-size:18px;z-index:5}
   #error{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#fff;background:#000;z-index:6;padding:20px;text-align:center}
@@ -29,231 +29,257 @@
 
   <button id="start">▶ Разрешить камеру и начать</button>
   <div id="error"></div>
-  <div class="badge">mediapipe hands • canvas • pinch-draw</div>
+  <div class="badge">offline • no-CDN • skin/hull tracking • pinch-draw</div>
 
-  <!-- Скрытое видео для чтения с камеры -->
   <video id="video" playsinline muted style="display:none"></video>
 
 <script>
-/* ====== Загрузчик MediaPipe с резервными CDN ====== */
-const MP_VERSION = '0.4.1646424915';
-const CDNS = [
-  'https://cdn.jsdelivr.net/npm',
-  'https://unpkg.com'
-];
-function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=()=>res();s.onerror=()=>rej(new Error('load '+src));document.head.appendChild(s);});}
+const $ = s=>document.querySelector(s);
+const hud=$('#hud'), errBox=$('#error'), video=$('#video');
+const view=$('#view'), paint=$('#paint');
+const ctxV=view.getContext('2d'), ctxP=paint.getContext('2d');
 
-async function loadMediapipe(){
-  let lastErr=null;
-  for(const base of CDNS){
-    try{
-      // порядок важен: camera_utils -> drawing_utils -> hands
-      await loadScript(`${base}/@mediapipe/camera_utils@${MP_VERSION}/camera_utils.js`);
-      await loadScript(`${base}/@mediapipe/drawing_utils@${MP_VERSION}/drawing_utils.js`);
-      await loadScript(`${base}/@mediapipe/hands@${MP_VERSION}/hands.js`);
-      return {base};
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr||new Error('Не удалось загрузить MediaPipe');
-}
+const ui = { color:'#55e1ff', size:8, debug:true, mirror:true };
+let running=false;
 
-/* ====== Утилиты ====== */
-const $ = sel => document.querySelector(sel);
-const hud = $('#hud');
-const errBox = $('#error');
-function showError(msg){
-  errBox.style.display='flex';
-  errBox.textContent = msg;
-}
-
-/* ====== Основной код ====== */
-const video = $('#video');
-const canvView = $('#view');
-const canvPaint = $('#paint');
-const ctxView = canvView.getContext('2d');
-const ctxPaint = canvPaint.getContext('2d');
-
-const ui = {
-  color: '#55e1ff',
-  size: 8,
-  debug: true
-};
-
-// Панель управления
-const panel = document.createElement('div');
+const panel=document.createElement('div');
 panel.id='panel';
-panel.innerHTML = `
+panel.innerHTML=`
   <label>Цвет <input id="clr" type="color" value="${ui.color}"></label>
   <label>Толщина <input id="th" type="range" min="2" max="24" step="1" value="${ui.size}"></label>
   <button id="clear">Очистить</button>
   <button id="dbg">Отладка: вкл</button>
+  <button id="flip">Зеркало: вкл</button>
 `;
 document.body.appendChild(panel);
-$('#clr').oninput = e=> ui.color = e.target.value;
-$('#th').oninput  = e=> ui.size = +e.target.value;
-$('#clear').onclick= ()=>{ ctxPaint.clearRect(0,0,canvPaint.width,canvPaint.height); };
-$('#dbg').onclick = e=>{ ui.debug=!ui.debug; e.target.textContent = 'Отладка: '+(ui.debug?'вкл':'выкл'); };
+$('#clr').oninput=e=>ui.color=e.target.value;
+$('#th').oninput=e=>ui.size=+e.target.value;
+$('#clear').onclick=()=>ctxP.clearRect(0,0,paint.width,paint.height);
+$('#dbg').onclick=e=>{ui.debug=!ui.debug; e.target.textContent='Отладка: '+(ui.debug?'вкл':'выкл');};
+$('#flip').onclick=e=>{ui.mirror=!ui.mirror; e.target.textContent='Зеркало: '+(ui.mirror?'вкл':'выкл');};
 
 function resize(){
-  const dpr = Math.min(window.devicePixelRatio||1, 2);
-  const w = innerWidth, h = innerHeight;
-  for (const c of [canvView, canvPaint]){
-    c.width = Math.round(w*dpr); c.height = Math.round(h*dpr);
-    c.style.width = w+'px'; c.style.height = h+'px';
-    const ctx = c.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const w=innerWidth,h=innerHeight;
+  for(const c of [view,paint]){
+    c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);
+    c.style.width=w+'px'; c.style.height=h+'px';
+    c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
   }
 }
-addEventListener('resize', resize); resize();
+addEventListener('resize',resize); resize();
 
-/* ====== Логика рисования «щепоткой» ====== */
-const strokes = {
-  Left: { drawing:false, last:null },
-  Right:{ drawing:false, last:null }
-};
-function drawPointLine(handed, x, y){
-  const s = strokes[handed];
-  ctxPaint.lineCap='round'; ctxPaint.lineJoin='round';
-  ctxPaint.strokeStyle = ui.color; ctxPaint.lineWidth = ui.size;
-  ctxPaint.beginPath();
-  if(s.last){ ctxPaint.moveTo(s.last.x, s.last.y); ctxPaint.lineTo(x,y); }
-  else { ctxPaint.moveTo(x,y); ctxPaint.lineTo(x+0.01,y+0.01); }
-  ctxPaint.stroke();
-  s.last = {x,y};
-}
-function stopDraw(handed){ strokes[handed].drawing=false; strokes[handed].last=null; }
+function showError(msg){ errBox.style.display='flex'; errBox.textContent=msg; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 
-/* ====== Старт камеры и трекинга ====== */
-async function start(){
-  // Проверка secure context для камеры
-  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'){
-    showError('Камера в браузере работает только по HTTPS или с http://localhost. Залей на GitHub Pages/Netlify или открой локально.');
-    return;
-  }
+/* ===== простой оффскрин для анализа кадра ===== */
+const work=document.createElement('canvas');
+const wctx=work.getContext('2d',{willReadFrequently:true});
+let W=192, H=144; // низкое разрешение для скорости
 
-  let mpBase;
-  try{
-    ({base: mpBase} = await loadMediapipe());
-  }catch(e){
-    showError('Не удалось загрузить MediaPipe Hands. Проверь интернет/VPN.'); return;
-  }
-
-  // Инициализируем Hands
-  const hands = new Hands({
-    locateFile: (file) => `${mpBase}/@mediapipe/hands@${MP_VERSION}/${file}`
-  });
-  hands.setOptions({
-    maxNumHands: 2,
-    modelComplexity: 1,
-    selfieMode: true,
-    minDetectionConfidence: 0.65,
-    minTrackingConfidence: 0.55
-  });
-
-  hands.onResults(onResults);
-
-  // Запускаем камеру
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:'user', width: {ideal: 1280}, height: {ideal: 720} },
-      audio: false
-    });
-    video.srcObject = stream;
-    await video.play();
-  }catch(e){
-    showError('Нет доступа к камере. Разреши доступ или выбери камеру в браузере.'); return;
-  }
-
-  // Камера-луп из mediaPipe utils (передаём кадр в Hands)
-  const cam = new Camera(video, {
-    onFrame: async () => { await hands.send({image: video}); },
-    width: 1280, height: 720
-  });
-  cam.start();
-
-  $('#start').style.display='none';
-  errBox.style.display='none';
-  hud.textContent = 'Щепотка (большой+указательный) — рисовать. Кнопка «Очистить» — стереть.';
+/* ===== геометрия: выпуклая оболочка (monotonic chain) ===== */
+function cross(o,a,b){ return (a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x); }
+function hull(points){
+  if(points.length<3) return points.slice();
+  points=points.slice().sort((p,q)=>p.x===q.x? p.y-q.y : p.x-q.x);
+  const lower=[]; for(const p of points){ while(lower.length>=2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop(); lower.push(p); }
+  const upper=[]; for(let i=points.length-1;i>=0;i--){ const p=points[i]; while(upper.length>=2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop(); upper.push(p); }
+  upper.pop(); lower.pop(); return lower.concat(upper);
 }
 
-/* ====== Рендер коллапс: кадр камеры + разметка ====== */
-function onResults(results){
-  const img = results.image;
-  // Подгон канваса (CSS уже растягивает, тут важны реальные пиксели для drawImage)
-  const needResize = (canvView.width !== img.width || canvView.height !== img.height);
-  if(needResize){
-    // Сохраняем нарисованное: у нас отдельный слой paint, так что просто ресайзим view.
-    canvView.width = img.width; canvView.height = img.height;
-    canvView.style.width='100%'; canvView.style.height='100%';
-    // paint оставляем в CSS-режиме, чтобы не смазывать рисунок; слой выше тянется на экран.
-    resize();
+/* ===== skin mask: YCbCr + HSV совместно (жёстко, но стабильно) ===== */
+function rgb2ycbcr(r,g,b){
+  const Y =  0.299*r + 0.587*g + 0.114*b;
+  const Cb = 128 - 0.168736*r - 0.331264*g + 0.5*b;
+  const Cr = 128 + 0.5*r - 0.418688*g - 0.081312*b;
+  return {Y,Cb,Cr};
+}
+function rgb2hsv(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  let h=0;
+  if(d!==0){
+    if(max===r) h=((g-b)/d)%6;
+    else if(max===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
   }
+  const s=max===0?0:d/max, v=max;
+  return {h,s,v};
+}
 
-  // Камера на view-слое
-  ctxView.save();
-  ctxView.clearRect(0,0,canvView.width,canvView.height);
-  // В selfieMode картинка уже зеркальная, рисуем как есть:
-  ctxView.drawImage(img, 0, 0, canvView.width, canvView.height);
+/* ===== основная логика кадра ===== */
+let lastTip=null, drawOn=false, fps=60, _acc=0,_frames=0,_t0=performance.now();
 
-  // Отрисовка скелета/точек + расчёт жестов
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length){
-    for (let i=0;i<results.multiHandLandmarks.length;i++){
-      const lm = results.multiHandLandmarks[i];
-      const handed = (results.multiHandedness && results.multiHandedness[i] && results.multiHandedness[i].label) || (i===0?'Right':'Left');
+function processFrame(){
+  if(!running) return;
+  const vw=view.width, vh=view.height;
 
-      if (ui.debug){
-        // линии и точки
-        drawConnectors(ctxView, lm, HAND_CONNECTIONS, {color:'#00ffc8', lineWidth: 2});
-        drawLandmarks(ctxView, lm, {color:'#ff5c9a', lineWidth: 1, radius: 2});
-        // подпись
-        ctxView.fillStyle = '#bdefff';
-        ctxView.font = '14px system-ui';
-        const p0 = lm[0];
-        ctxView.fillText(handed, p0.x*canvView.width+8, p0.y*canvView.height+4);
-      }
+  // захват из видео в низком разрешении
+  if(!video.videoWidth){ requestAnimationFrame(processFrame); return; }
+  const aspect = video.videoWidth / video.videoHeight;
+  if(Math.abs(W/H - aspect) > 0.01){ W = 192; H = Math.round(W / aspect); work.width=W; work.height=H; }
 
-      // Жест "щепотка": расстояние между большим (4) и указательным (8)
-      const pThumb = lm[4], pIndex = lm[8];
-      const dx = (pThumb.x - pIndex.x) * canvView.width;
-      const dy = (pThumb.y - pIndex.y) * canvView.height;
-      const dist = Math.hypot(dx,dy);
-      const thresh = Math.max(20, Math.min(canvView.width, canvView.height) * 0.035); // адаптивный порог
+  // рисуем на видимом канвасе
+  ctxV.save();
+  ctxV.clearRect(0,0,vw,vh);
+  // зеркалим при необходимости
+  if(ui.mirror){ ctxV.translate(vw,0); ctxV.scale(-1,1); }
+  ctxV.drawImage(video, 0, 0, vw, vh);
 
-      const x = lm[8].x * canvView.width;
-      const y = lm[8].y * canvView.height;
+  // в work — уменьшенная копия
+  wctx.save();
+  wctx.clearRect(0,0,W,H);
+  wctx.drawImage(video, 0, 0, W, H);
+  const img = wctx.getImageData(0,0,W,H);
+  const d = img.data;
 
-      if (dist < thresh){
-        // рисуем
-        if (!strokes[handed].drawing){ strokes[handed].drawing=true; strokes[handed].last=null; }
-        drawPointLine(handed, x, y);
-        if (ui.debug){
-          ctxView.beginPath(); ctxView.arc(x,y, Math.max(6, ui.size), 0, Math.PI*2);
-          ctxView.strokeStyle='#55e1ff88'; ctxView.lineWidth=2; ctxView.stroke();
-        }
-      } else {
-        if (strokes[handed].drawing) stopDraw(handed);
+  const pts=[];
+  // агрессивная маска кожи
+  for(let y=0;y<H;y+=1){
+    for(let x=0;x<W;x+=1){
+      const i=(y*W+x)*4;
+      const r=d[i], g=d[i+1], b=d[i+2];
+      const {Y,Cb,Cr}=rgb2ycbcr(r,g,b);
+      const {h,s,v}=rgb2hsv(r,g,b);
+      const ycbcr_ok = (Cb>=77 && Cb<=127 && Cr>=133 && Cr<=180 && Y>40);
+      const hsv_ok   = (h>=0 && h<=50 && s>=0.20 && s<=0.80 && v>=0.25);
+      if(ycbcr_ok && hsv_ok){
+        pts.push({x, y});
       }
     }
-  } else {
-    // нет рук — сброс состояний
-    stopDraw('Left'); stopDraw('Right');
   }
-  ctxView.restore();
 
-  // HUD
-  // Простейший FPS счётчик
-  fpsCount();
-  hud.textContent = `FPS ~ ${fps.toFixed(0)} • жест: щепотка = рисовать • цвет ${ui.color} • толщина ${ui.size}`;
+  // недостаточно точек — показываем подсказку
+  if(pts.length<120){
+    stopDraw();
+    ctxV.restore();
+    hud.textContent='Рука не найдена. Освещение/фон светлее, ладонь к камере.';
+    requestAnimationFrame(processFrame); return;
+  }
+
+  // выпуклая оболочка
+  const hullPts = hull(pts);
+
+  // центр масс (по всем skin-точкам)
+  let cx=0, cy=0;
+  for(const p of pts){ cx+=p.x; cy+=p.y; }
+  cx/=pts.length; cy/=pts.length;
+
+  // оценка «острых вершин» на оболочке: угол+удаление
+  function angleScore(arr,i){
+    const n=arr.length, p0=arr[(i-1+n)%n], p1=arr[i], p2=arr[(i+1)%n];
+    const v1x=p0.x-p1.x, v1y=p0.y-p1.y, v2x=p2.x-p1.x, v2y=p2.y-p1.y;
+    const dot=v1x*v2x+v1y*v2y;
+    const n1=Math.hypot(v1x,v1y)||1, n2=Math.hypot(v2x,v2y)||1;
+    const cos=clamp(dot/(n1*n2), -1, 1);
+    const ang=Math.acos(cos); // 0..pi
+    const dist=Math.hypot(p1.x-cx,p1.y-cy);
+    // хотим маленький угол и большой радиус
+    return (1 - cos) * (dist+1);
+  }
+
+  const scored=hullPts.map((p,i)=>({i, p, s:angleScore(hullPts,i)})).sort((a,b)=>b.s-a.s);
+  const top=scored.slice(0,6); // кандидаты «кончики»
+  // главный «кончик»
+  const tip = top[0]?.p || hullPts[0];
+
+  // поиск второго «кончика» рядом с большим пальцем (для пинча)
+  let second = null, minPairDist=1e9;
+  for(let i=1;i<top.length;i++){
+    const q=top[i].p;
+    const dx=tip.x-q.x, dy=tip.y-q.y;
+    const dist=Math.hypot(dx,dy);
+    if(dist<minPairDist){ minPairDist=dist; second=q; }
+  }
+
+  // масштабируем в экранные координаты
+  function toScreen(p){
+    const sx = p.x/W * vw;
+    const sy = p.y/H * vh;
+    return ui.mirror ? {x: vw - sx, y: sy} : {x: sx, y: sy};
+  }
+  const tipS = toScreen(tip);
+  const cenS = toScreen({x:cx, y:cy});
+  const secS = second ? toScreen(second) : null;
+
+  // «пинч» — два острых кончика близко
+  const pinch = (secS && Math.hypot(tipS.x-secS.x, tipS.y-secS.y) < Math.min(vw,vh)*0.05);
+
+  // рисуем отладку
+  if(ui.debug){
+    // оболочка
+    ctxV.strokeStyle='#00ffc855'; ctxV.lineWidth=2;
+    ctxV.beginPath();
+    const p0=toScreen(hullPts[0]); ctxV.moveTo(p0.x,p0.y);
+    for(let i=1;i<hullPts.length;i++){ const pp=toScreen(hullPts[i]); ctxV.lineTo(pp.x,pp.y); }
+    ctxV.closePath(); ctxV.stroke();
+
+    // центр
+    ctxV.fillStyle='#ff69b4'; ctxV.beginPath(); ctxV.arc(cenS.x,cenS.y,6,0,Math.PI*2); ctxV.fill();
+
+    // кончики
+    ctxV.fillStyle='#55e1ff'; ctxV.beginPath(); ctxV.arc(tipS.x,tipS.y,8,0,Math.PI*2); ctxV.fill();
+    if(secS){ ctxV.fillStyle='#ffd255'; ctxV.beginPath(); ctxV.arc(secS.x,secS.y,8,0,Math.PI*2); ctxV.fill(); }
+
+    if(pinch){
+      ctxV.strokeStyle='#55e1ff88'; ctxV.setLineDash([6,6]); ctxV.beginPath();
+      ctxV.moveTo(tipS.x,tipS.y); ctxV.lineTo(secS.x,secS.y); ctxV.stroke(); ctxV.setLineDash([]);
+    }
+  }
+
+  // рисование
+  if(pinch){
+    if(!drawOn) { drawOn=true; lastTip=null; }
+  } else {
+    if(drawOn) stopDraw();
+  }
+  if(drawOn){
+    drawLine(tipS.x, tipS.y);
+  }
+
+  ctxV.restore();
+
+  // FPS
+  const now=performance.now(); _frames++; _acc += 1000/(now-_t0); _t0=now;
+  if(_frames>=12){ fps=_acc/_frames; _acc=0; _frames=0; }
+  hud.textContent = `FPS ~ ${fps.toFixed(0)} • жест: пинч=рисовать • цвет ${ui.color} • толщина ${ui.size}`;
+
+  requestAnimationFrame(processFrame);
 }
 
-/* ====== FPS ====== */
-let fps=60, _acc=0, _frames=0, _t0=performance.now();
-function fpsCount(){
-  const now = performance.now(); _frames++; _acc += 1000/(now-_t0); _t0 = now;
-  if (_frames>=12){ fps=_acc/_frames; _acc=0; _frames=0; }
+let lastTip=null;
+function drawLine(x,y){
+  ctxP.lineCap='round'; ctxP.lineJoin='round';
+  ctxP.strokeStyle=ui.color; ctxP.lineWidth=ui.size;
+  ctxP.beginPath();
+  if(lastTip){ ctxP.moveTo(lastTip.x,lastTip.y); ctxP.lineTo(x,y); }
+  else { ctxP.moveTo(x,y); ctxP.lineTo(x+0.01,y+0.01); }
+  ctxP.stroke();
+  lastTip={x,y};
 }
+function stopDraw(){ drawOn=false; lastTip=null; }
 
-/* ====== Кнопка Старт ====== */
+/* ===== старт ===== */
+async function start(){
+  if(location.protocol!=='https:' && location.hostname!=='localhost' && location.hostname!=='127.0.0.1'){
+    showError('Камера работает только по HTTPS или с http://localhost. Запусти: python -m http.server 8000 → http://localhost:8000');
+    return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
+      audio:false
+    });
+    video.srcObject=stream; await video.play();
+  }catch(e){
+    showError('Доступ к камере отклонён. Разреши доступ в браузере.'); return;
+  }
+  $('#start').style.display='none';
+  errBox.style.display='none';
+  running=true;
+  requestAnimationFrame(processFrame);
+}
 document.getElementById('start').addEventListener('click', start);
 </script>
 </body>
